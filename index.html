@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="MuteGPT - AI-Powered Personalized Horoscope Chatbot พยากรณ์ดวงชะตาเฉพาะบุคคลด้วยปัญญาประดิษฐ์" />
+  <title>MuteGPT — ให้จักรวาลนำทางคุณด้วย AI</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+
+  <!-- ===== BACKGROUND LAYER ===== -->
+  <div class="bg-layer">
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <!-- Zodiac Wheel -->
+    <div class="zodiac-wheel">
+      <svg viewBox="0 0 100 100" style="width:100%;height:100%;color:#fde68a;">
+        <circle cx="50" cy="50" r="49" fill="none" stroke="currentColor" stroke-width="0.2" stroke-dasharray="1,1"/>
+        <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="0.1"/>
+        <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" stroke-width="0.2"/>
+        <circle cx="50" cy="50" r="32" fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="2,4"/>
+        <circle cx="50" cy="50" r="15" fill="none" stroke="currentColor" stroke-width="0.1"/>
+        <circle cx="50" cy="50" r="5" fill="none" stroke="currentColor" stroke-width="0.3"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(0 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(30 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(60 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(90 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(120 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(150 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(180 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(210 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(240 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(270 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(300 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(330 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(0 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(45 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(90 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(135 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(180 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(225 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(270 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(315 50 50)"/>
+      </svg>
+    </div>
+
+    <div class="stars-small"></div>
+    <div class="stars-medium"></div>
+    <div class="stars-large"></div>
+  </div>
+
+  <!-- ===== NAVIGATION ===== -->
+  <nav id="navbar" class="navbar">
+    <div class="navbar-inner">
+      <a href="#" class="logo">
+        <i data-lucide="orbit"></i>
+        <span class="logo-text">MuteGPT</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features">ศาสตร์การพยากรณ์</a></li>
+        <li><a href="#how-it-works">เทคโนโลยี AI</a></li>
+        <li><a href="#limitations">ข้อจำกัด</a></li>
+      </ul>
+      <button class="btn-primary" id="btn-open-auth">เข้าสู่ระบบ</button>
+    </div>
+  </nav>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main>
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-badge animate-fade-in-up">
+        <i data-lucide="moon"></i>
+        <span>AI-Powered Personalized Horoscope Chatbot</span>
+        <i data-lucide="sparkles"></i>
+      </div>
+
+      <h1 class="animate-fade-in-up delay-100">
+        ให้จักรวาลนำทางคุณด้วย<br/>
+        <span class="gradient-text">มูเตGPT</span>
+      </h1>
+
+      <p class="animate-fade-in-up delay-200">
+        ก้าวข้ามขีดจำกัดของคำทำนายแบบตายตัว
+        สัมผัสประสบการณ์พยากรณ์ดวงชะตาเฉพาะบุคคลที่วิเคราะห์จากข้อมูลพื้นฐานของคุณ
+        ผสานพลังของ Large Language Model สู่การสนทนาเสมือนหมอดูส่วนตัว
+      </p>
+
+      <div class="hero-cta-wrapper animate-fade-in-up delay-300">
+        <div class="hero-cta-glow"></div>
+        <button class="btn-hero" id="btn-hero-cta">
+          เริ่มทำนายดวงชะตา
+          <i data-lucide="chevron-right"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+      <div class="section-header">
+        <div class="label">
+          <i data-lucide="star" style="color:#c084fc;"></i>
+          <h2>ศาสตร์การพยากรณ์ของเรา</h2>
+          <i data-lucide="star" style="color:#fbbf24;"></i>
+        </div>
+        <p>รวบรวมหมวดหมู่การพยากรณ์ยอดนิยมในไทยไว้ในที่เดียว ตอบโจทย์ทุกความเชื่อของคุณ</p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Card 1 -->
+        <div class="feature-card animate-fade-in-up">
+          <div class="feature-icon">
+            <i data-lucide="bot" style="color:#818cf8; filter:drop-shadow(0 0 8px rgba(129,140,248,0.5));"></i>
+          </div>
+          <h3>ไพ่ยิปซี (Tarot Reading)</h3>
+          <p>สุ่มไพ่แบบ Interactive พร้อมให้ AI วิเคราะห์ความหมายของหน้าไพ่ที่เชื่อมโยงกับคำถามและบริบทชีวิตของคุณ</p>
+        </div>
+        <!-- Card 2 -->
+        <div class="feature-card animate-fade-in-up delay-100">
+          <div class="feature-icon">
+            <i data-lucide="sun" style="color:#fbbf24; filter:drop-shadow(0 0 8px rgba(251,191,36,0.5));"></i>
+          </div>
+          <h3>โหราศาสตร์ไทย</h3>
+          <p>ทำนายดวงชะตาเชิงลึก อิงตามหลักลัคนาราศี วัน เดือน ปีเกิด และเวลาตกฟากของคุณโดยเฉพาะ</p>
+        </div>
+        <!-- Card 3 -->
+        <div class="feature-card animate-fade-in-up delay-200">
+          <div class="feature-icon">
+            <i data-lucide="hash" style="color:#34d399; filter:drop-shadow(0 0 8px rgba(52,211,153,0.5));"></i>
+          </div>
+          <h3>เลขศาสตร์ (Numerology)</h3>
+          <p>วิเคราะห์พลังของตัวเลขที่รายล้อมตัวคุณ เช่น เบอร์โทรศัพท์ ทะเบียนรถ เพื่อเสริมสิริมงคล</p>
+        </div>
+        <!-- Card 4 -->
+        <div class="feature-card animate-fade-in-up delay-300">
+          <div class="feature-icon">
+            <i data-lucide="palette" style="color:#f472b6; filter:drop-shadow(0 0 8px rgba(244,114,182,0.5));"></i>
+          </div>
+          <h3>สีมงคลประจำวัน</h3>
+          <p>แนะนำสีเสื้อผ้า ของใช้ ที่ช่วยเสริมดวงในแต่ละวัน ไม่ว่าจะเป็นเรื่องงาน เงิน หรือความรัก</p>
+        </div>
+        <!-- Card 5 -->
+        <div class="feature-card animate-fade-in-up delay-400">
+          <div class="feature-icon">
+            <i data-lucide="heart" style="color:#f87171; filter:drop-shadow(0 0 8px rgba(248,113,113,0.5));"></i>
+          </div>
+          <h3>ดวงความรัก (Love Matching)</h3>
+          <p>วิเคราะห์ความเข้ากันได้ของคุณกับคนคุย หรือทำนายแนวโน้มความสัมพันธ์ในอนาคต</p>
+        </div>
+        <!-- Card 6 -->
+        <div class="feature-card animate-fade-in-up delay-500">
+          <div class="feature-icon">
+            <i data-lucide="message-circle" style="color:#c084fc; filter:drop-shadow(0 0 8px rgba(192,132,252,0.5));"></i>
+          </div>
+          <h3>Interactive Chatbot</h3>
+          <p>โต้ตอบอย่างเป็นธรรมชาติ ถาม-ตอบ ข้อสงสัยเจาะลึกได้เหมือนกำลังปรึกษาผู้เชี่ยวชาญแบบตัวต่อตัว</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI & Tech Explanation -->
+    <section id="how-it-works" class="tech-section">
+      <div class="tech-bg"></div>
+      <div class="tech-inner">
+        <div class="tech-text">
+          <h2>
+            เชื่อมโยงดวงดาวและโค้ด<br/>
+            สู่ <span class="gradient-text">Generative AI</span>
+          </h2>
+          <p>
+            MuteGPT ขับเคลื่อนด้วย Gemini API ที่ทำหน้าที่เป็นผู้เชี่ยวชาญด้านศาสตร์พยากรณ์
+            ระบบจะจดจำ <strong>User Profile</strong> (วันเกิด, ราศี, ความชอบ) และนำมาเป็น
+            <strong>Context</strong> ในการวิเคราะห์
+          </p>
+          <p>
+            สถาปัตยกรรมระบบออกแบบด้วย <strong>Next.js</strong> และ <strong>FastAPI</strong>
+            ถ่ายทอดคำทำนายผ่าน Real-time Streaming ให้คุณรู้สึกเหมือนกำลังพูดคุยกับหมอดูตัวจริง
+          </p>
+        </div>
+        <div class="chat-demo-wrapper">
+          <div class="chat-demo">
+            <div class="chat-demo-inner">
+              <!-- Decorative stars -->
+              <svg class="decorative-star" style="top:16px;right:16px;width:20px;height:20px;color:#f59e0b;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg class="decorative-star" style="bottom:32px;left:16px;width:12px;height:12px;color:#c084fc;animation-delay:1.5s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+
+              <!-- User message -->
+              <div class="chat-msg">
+                <div class="chat-avatar user">👤</div>
+                <div class="chat-bubble user-bubble">
+                  อยากรู้ดวงการงานช่วงนี้จังค่ะ (เกิดวันจันทร์ ราศีสิงห์)
+                </div>
+              </div>
+              <!-- Bot message -->
+              <div class="chat-msg bot">
+                <div class="chat-avatar ai">
+                  <i data-lucide="moon" style="width:20px;height:20px;"></i>
+                </div>
+                <div class="chat-bubble ai-bubble">
+                  จากดวงดาวพื้นฐานของคุณและไพ่ <strong>The Emperor</strong> ที่สุ่มได้
+                  ช่วงนี้การงานจะโดดเด่นมากครับ ผู้ใหญ่ให้ความอุปถัมภ์
+                  แต่ต้องระวังความเครียดจากความคาดหวัง แนะนำให้ใส่เสื้อ<span class="text-blue">สีฟ้า</span>เสริมความเมตตาครับ ✨
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Limitations -->
+    <section id="limitations" class="limitations">
+      <div class="limitations-glow"></div>
+      <div class="limitations-card">
+        <div class="limitations-icon">
+          <i data-lucide="triangle-alert"></i>
+        </div>
+        <h2>ข้อจำกัดที่คุณควรทราบ (Scope of Limitations)</h2>
+        <div class="limitations-list">
+          <div class="limitation-item">
+            <span class="limitation-dot" style="color:#f87171;">✦</span>
+            <span><strong>ไม่ใช่ผู้เชี่ยวชาญเฉพาะทาง:</strong> ระบบไม่สามารถให้คำปรึกษาที่มีผลกระทบสูง เช่น การแพทย์ กฎหมาย หรือการลงทุน</span>
+          </div>
+          <div class="limitation-item">
+            <span class="limitation-dot" style="color:#fbbf24;">✦</span>
+            <span><strong>เพื่อเป็นแนวทางเท่านั้น:</strong> คำทำนายวิเคราะห์ตามหลักสถิติและความเชื่อ ไม่ยืนยันอนาคต 100%</span>
+          </div>
+          <div class="limitation-item">
+            <span class="limitation-dot" style="color:#c084fc;">✦</span>
+            <span><strong>ข้อจำกัดด้านความเร็ว:</strong> การประมวลผลผ่านโมเดล AI อาจมีความหน่วงในบางช่วงเวลา</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a href="#" class="logo">
+          <i data-lucide="orbit"></i>
+          <span class="logo-text">MuteGPT</span>
+        </a>
+        <p>FRA502 Web Programming</p>
+        <p>สถาบันวิทยาการหุ่นยนต์ภาคสนาม มจธ.</p>
+      </div>
+      <div class="footer-credits">
+        <p class="team-name">พัฒนาโดย กลุ่ม GameNoiAutomation</p>
+        <p>ธรรมภณ พลายแดง (65340500028)</p>
+        <p>พสุรัตน์ พิบูลย์จิรชาติ (65340500043)</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===== AUTH MODAL ===== -->
+  <div id="auth-modal" class="modal-overlay">
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal-box">
+      <div class="modal-glow-1"></div>
+      <div class="modal-glow-2"></div>
+      <button class="modal-close" id="btn-close-modal" title="กลับสู่หน้าหลัก">
+        <i data-lucide="x"></i>
+      </button>
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-icon">
+            <i data-lucide="moon"></i>
+          </div>
+          <h2 id="modal-title">เข้าสู่ระบบ MuteGPT</h2>
+          <p id="modal-subtitle">เชื่อมต่อจิตวิญญาณและรับคำทำนาย</p>
+        </div>
+
+        <!-- Google Sign In -->
+        <button class="btn-google">
+          <svg viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          ดำเนินการต่อด้วย Google
+        </button>
+
+        <div class="divider">
+          <div class="divider-line"></div>
+          <span>หรือด้วยอีเมล</span>
+          <div class="divider-line"></div>
+        </div>
+
+        <!-- Email Form -->
+        <form id="auth-form" onsubmit="return false;">
+          <div class="form-group hidden" id="name-field">
+            <div class="icon"><i data-lucide="user"></i></div>
+            <input type="text" class="form-input" placeholder="ชื่อ-นามสกุล" />
+          </div>
+          <div class="form-group">
+            <div class="icon"><i data-lucide="mail"></i></div>
+            <input type="email" class="form-input" placeholder="อีเมลของคุณ" />
+          </div>
+          <div class="form-group">
+            <div class="icon"><i data-lucide="lock"></i></div>
+            <input type="password" class="form-input" placeholder="รหัสผ่าน" />
+          </div>
+          <button type="submit" class="btn-submit" id="btn-auth-submit">เข้าสู่ระบบ</button>
+        </form>
+
+        <div class="modal-toggle" id="modal-toggle">
+          ยังไม่มีบัญชีใช่หรือไม่?
+          <button id="btn-toggle-mode">สร้างบัญชีใหม่</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== JAVASCRIPT ===== -->
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // --- State ---
+    let authMode = 'login';
+
+    // --- DOM Elements ---
+    const navbar = document.getElementById('navbar');
+    const authModal = document.getElementById('auth-modal');
+    const modalBackdrop = document.getElementById('modal-backdrop');
+    const btnOpenAuth = document.getElementById('btn-open-auth');
+    const btnHeroCta = document.getElementById('btn-hero-cta');
+    const btnCloseModal = document.getElementById('btn-close-modal');
+    const btnToggleMode = document.getElementById('btn-toggle-mode');
+    const modalTitle = document.getElementById('modal-title');
+    const modalSubtitle = document.getElementById('modal-subtitle');
+    const modalToggle = document.getElementById('modal-toggle');
+    const nameField = document.getElementById('name-field');
+    const btnAuthSubmit = document.getElementById('btn-auth-submit');
+
+    // --- Navbar scroll effect ---
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 50);
+    });
+
+    // --- Modal functions ---
+    function openModal() {
+      authModal.classList.add('active');
+      document.body.classList.add('no-scroll');
+    }
+
+    function closeModal() {
+      authModal.classList.remove('active');
+      document.body.classList.remove('no-scroll');
+      setTimeout(() => {
+        authMode = 'login';
+        updateAuthUI();
+      }, 300);
+    }
+
+    function updateAuthUI() {
+      if (authMode === 'login') {
+        modalTitle.textContent = 'เข้าสู่ระบบ MuteGPT';
+        modalSubtitle.textContent = 'เชื่อมต่อจิตวิญญาณและรับคำทำนาย';
+        nameField.classList.add('hidden');
+        btnAuthSubmit.textContent = 'เข้าสู่ระบบ';
+        modalToggle.innerHTML = 'ยังไม่มีบัญชีใช่หรือไม่? <button id="btn-toggle-mode">สร้างบัญชีใหม่</button>';
+      } else {
+        modalTitle.textContent = 'เริ่มต้นการทำนายของคุณ';
+        modalSubtitle.textContent = 'สร้างบัญชีเพื่อบันทึกโปรไฟล์ดวงดาวของคุณ';
+        nameField.classList.remove('hidden');
+        btnAuthSubmit.textContent = 'สมัครสมาชิก';
+        modalToggle.innerHTML = 'มีบัญชีอยู่แล้ว? <button id="btn-toggle-mode">เข้าสู่ระบบ</button>';
+      }
+      // Re-bind toggle button
+      document.getElementById('btn-toggle-mode').addEventListener('click', () => {
+        authMode = authMode === 'login' ? 'register' : 'login';
+        updateAuthUI();
+      });
+    }
+
+    // --- Event listeners ---
+    btnOpenAuth.addEventListener('click', openModal);
+    btnHeroCta.addEventListener('click', openModal);
+    btnCloseModal.addEventListener('click', closeModal);
+    modalBackdrop.addEventListener('click', closeModal);
+    btnToggleMode.addEventListener('click', () => {
+      authMode = authMode === 'login' ? 'register' : 'login';
+      updateAuthUI();
+    });
+
+    // --- Scroll-triggered animations ---
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.animationPlayState = 'running';
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.animate-fade-in-up').forEach(el => {
+      el.style.animationPlayState = 'paused';
+      observer.observe(el);
+    });
+    // Let hero animations play immediately
+    document.querySelectorAll('.hero .animate-fade-in-up').forEach(el => {
+      el.style.animationPlayState = 'running';
+    });
+  </script>
+
+</body>
+</html>
