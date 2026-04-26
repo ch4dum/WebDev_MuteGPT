@@ -45,42 +45,20 @@ body {
 .bg-layer {
   position: fixed; inset: 0; z-index: 0;
   pointer-events: none; overflow: hidden;
+  background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('background.jpg') no-repeat center center fixed;
+  background-size: cover;
 }
 
-.nebula {
-  position: absolute; border-radius: 50%;
-  mix-blend-mode: screen; filter: blur(150px);
+.nebula, .stars-small, .stars-medium, .stars-large {
+  display: none; /* Hide previous background effects */
 }
-.nebula-1 { top: -20%; left: -10%; width: 70%; height: 70%; background: rgba(88, 28, 135, 0.2); }
-.nebula-2 { bottom: -20%; right: -10%; width: 60%; height: 60%; background: rgba(49, 46, 129, 0.2); filter: blur(120px); }
-.nebula-3 { top: 20%; left: 50%; transform: translateX(-50%); width: 80%; height: 50%; background: rgba(180, 83, 9, 0.05); filter: blur(180px); }
 
 .zodiac-wheel {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   width: 900px; height: 900px;
-  opacity: 0.03;
+  opacity: 0.05;
   animation: spin 180s linear infinite;
-}
-
-.stars-small, .stars-medium, .stars-large {
-  position: absolute; inset: 0;
-}
-.stars-small {
-  opacity: 0.2;
-  background-image: radial-gradient(circle, #fff 1px, transparent 1px);
-  background-size: 50px 50px;
-}
-.stars-medium {
-  opacity: 0.3;
-  background-image: radial-gradient(circle, #fff 1.5px, transparent 1.5px);
-  background-size: 120px 150px;
-}
-.stars-large {
-  opacity: 0.4;
-  background-image: radial-gradient(circle, #fcd34d 2px, transparent 2px);
-  background-size: 250px 200px;
-  animation: pulse-glow 4s ease-in-out infinite;
 }
 
 /* ===== NAVBAR ===== */
