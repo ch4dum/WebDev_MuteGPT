@@ -25,11 +25,17 @@ if (authModal) {
   const nameField = document.getElementById('name-field');
   const btnAuthSubmit = document.getElementById('btn-auth-submit');
 
+  /**
+   * Opens the authentication modal.
+   */
   function openModal() {
     authModal.classList.add('active');
     document.body.classList.add('no-scroll');
   }
 
+  /**
+   * Closes the authentication modal and resets to login mode.
+   */
   function closeModal() {
     authModal.classList.remove('active');
     document.body.classList.remove('no-scroll');
@@ -39,6 +45,9 @@ if (authModal) {
     }, 300);
   }
 
+  /**
+   * Updates the Modal UI elements based on the current authMode (login/register).
+   */
   function updateAuthUI() {
     if (authMode === 'login') {
       modalTitle.textContent = 'เข้าสู่ระบบ MuteGPT';
@@ -53,14 +62,18 @@ if (authModal) {
       btnAuthSubmit.textContent = 'สมัครสมาชิก';
       modalToggle.innerHTML = 'มีบัญชีอยู่แล้ว? <button id="btn-toggle-mode">เข้าสู่ระบบ</button>';
     }
-    // Re-bind toggle button
-    document.getElementById('btn-toggle-mode').addEventListener('click', () => {
-      authMode = authMode === 'login' ? 'register' : 'login';
-      updateAuthUI();
-    });
+    
+    // Re-bind toggle button event listener
+    const toggleBtn = document.getElementById('btn-toggle-mode');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        authMode = authMode === 'login' ? 'register' : 'login';
+        updateAuthUI();
+      });
+    }
   }
 
-  // Event listeners
+  // Bind Event listeners
   if (btnOpenAuth) btnOpenAuth.addEventListener('click', openModal);
   if (btnHeroCta) btnHeroCta.addEventListener('click', openModal);
   if (btnCloseModal) btnCloseModal.addEventListener('click', closeModal);
@@ -86,7 +99,8 @@ document.querySelectorAll('.animate-fade-in-up').forEach(el => {
   el.style.animationPlayState = 'paused';
   observer.observe(el);
 });
-// Let hero animations play immediately
+
+// Immediately play hero animations
 document.querySelectorAll('.hero .animate-fade-in-up').forEach(el => {
   el.style.animationPlayState = 'running';
 });

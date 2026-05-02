@@ -161,22 +161,25 @@
     <span>กรุณากรอกข้อมูลให้ครบถ้วน</span>
   </div>
 
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
   <script src="app.js"></script>
   <script>
-    // --- Profile form validation ---
+    // --- Profile form validation and submission ---
     const profileForm = document.getElementById('profile-form');
     const toastError = document.getElementById('toast-error');
     const profileInputs = profileForm.querySelectorAll('.profile-input');
     let toastTimeout = null;
     
-    // ตั้งค่า วันเกิด สูงสุดให้เลือกได้แค่วันนี้
+    // Set max birthdate to today
     const birthdateInput = document.getElementById('input-birthdate');
     if (birthdateInput) {
       const today = new Date().toISOString().split('T')[0];
       birthdateInput.setAttribute('max', today);
     }
 
-    // เมื่อผู้ใช้พิมพ์หรือเลือกค่า ให้ลบ error state ของช่องนั้น
+    // Clear error state on input change
     profileInputs.forEach(input => {
       const clearError = () => {
         if (input.value.trim() !== '') {
@@ -187,28 +190,40 @@
       input.addEventListener('change', clearError);
     });
 
-    // แสดง toast แจ้งเตือน
+    /**
+     * Shows an error toast notification.
+     */
     function showErrorToast(message = 'กรุณากรอกข้อมูลให้ครบถ้วน') {
       toastError.querySelector('span').textContent = message;
-      // รีเซ็ต animation ถ้า toast อยู่แล้ว
       toastError.classList.remove('show');
       clearTimeout(toastTimeout);
-      // Force reflow เพื่อให้ animation เริ่มใหม่
-      void toastError.offsetWidth;
+      void toastError.offsetWidth; // Force reflow
       toastError.classList.add('show');
       toastTimeout = setTimeout(() => {
         toastError.classList.remove('show');
       }, 2000);
     }
 
-    // เมื่อกด Submit → ตรวจทุกช่องพร้อมกัน
-    profileForm.addEventListener('submit', (e) => {
+    // Handle form submission
+    profileForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      let hasEmpty = false;
+      
+      // 1. Check if Supabase is initialized and user is logged in
+      if (!supabaseClient) {
+        showErrorToast('ระบบยังไม่พร้อมใช้งาน กรุณารอสักครู่');
+        return;
+      }
 
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        alert('กรุณาเข้าสู่ระบบก่อนทำรายการ');
+        window.location.href = 'index.html';
+        return;
+      }
+
+      let hasEmpty = false;
       profileInputs.forEach(input => {
         if (input.value.trim() === '') {
-          // ลบ class ก่อนเพื่อ re-trigger animation
           input.classList.remove('input-error');
           void input.offsetWidth;
           input.classList.add('input-error');
@@ -223,11 +238,11 @@
         return;
       }
 
-      // ตรวจสอบห้ามเป็นวันที่ในอนาคต
+      // Prevent future dates
       if (birthdateInput && birthdateInput.value) {
         const selectedDate = new Date(birthdateInput.value);
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // ตัดเวลาออกเทียบแค่วันที่
+        today.setHours(0, 0, 0, 0);
         if (selectedDate > today) {
           birthdateInput.classList.remove('input-error');
           void birthdateInput.offsetWidth;
@@ -237,8 +252,39 @@
         }
       }
 
-      // TODO: ส่งข้อมูลไป backend
-      alert('บันทึกข้อมูลสำเร็จ!');
+      // --- 2. Save data to Supabase ---
+      try {
+        const profileData = {
+          id: user.id, // Linked to Auth User ID
+          full_name: document.getElementById('input-fullname').value,
+          nickname: document.getElementById('input-nickname').value,
+          phone_last4: document.getElementById('input-phone-last4').value,
+          birth_date: document.getElementById('input-birthdate').value,
+          birth_time: document.getElementById('input-birthtime').value,
+          updated_at: new Date()
+        };
+
+        const { error } = await supabaseClient
+          .from('profiles')
+          .upsert(profileData);
+
+        if (error) throw error;
+
+        // Success state
+        const btnSubmit = document.getElementById('btn-save-profile');
+        btnSubmit.innerHTML = '<i data-lucide="check"></i> บันทึกสำเร็จ!';
+        btnSubmit.style.backgroundColor = '#10b981';
+        if (window.lucide) lucide.createIcons();
+        
+        alert('บันทึกประวัติดวงดาวของคุณเรียบร้อยแล้ว!');
+        
+        // TODO: Redirect to analysis page
+        // window.location.href = 'analysis.html';
+
+      } catch (err) {
+        console.error('Error saving profile:', err.message);
+        showErrorToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + err.message);
+      }
     });
   </script>
 </body>
