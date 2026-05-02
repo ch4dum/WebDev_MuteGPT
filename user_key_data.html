@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="ผูกดวงชะตา - กรอกข้อมูลพื้นฐานเพื่อให้ MuteGPT วิเคราะห์ดวงชะตาเฉพาะบุคคล" />
+  <title>ผูกดวงชะตา — MuteGPT</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+
+  <!-- ===== BACKGROUND LAYER ===== -->
+  <div class="bg-layer">
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <!-- Zodiac Wheel -->
+    <div class="zodiac-wheel">
+      <svg viewBox="0 0 100 100" style="width:100%;height:100%;color:#fde68a;">
+        <circle cx="50" cy="50" r="49" fill="none" stroke="currentColor" stroke-width="0.2" stroke-dasharray="1,1"/>
+        <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="0.1"/>
+        <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" stroke-width="0.2"/>
+        <circle cx="50" cy="50" r="32" fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="2,4"/>
+        <circle cx="50" cy="50" r="15" fill="none" stroke="currentColor" stroke-width="0.1"/>
+        <circle cx="50" cy="50" r="5" fill="none" stroke="currentColor" stroke-width="0.3"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(0 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(30 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(60 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(90 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(120 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(150 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(180 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(210 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(240 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(270 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(300 50 50)"/>
+        <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(330 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(0 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(45 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(90 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(135 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(180 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(225 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(270 50 50)"/>
+        <line x1="50" y1="5" x2="50" y2="15" stroke="currentColor" stroke-width="0.1" stroke-dasharray="0.5,0.5" transform="rotate(315 50 50)"/>
+      </svg>
+    </div>
+
+    <div class="stars-small"></div>
+    <div class="stars-medium"></div>
+    <div class="stars-large"></div>
+  </div>
+
+  <!-- ===== NAVIGATION ===== -->
+  <nav id="navbar" class="navbar scrolled">
+    <div class="navbar-inner">
+      <a href="index.html" class="logo">
+        <i data-lucide="orbit"></i>
+        <span class="logo-text">MuteGPT</span>
+      </a>
+      <div class="navbar-avatar">
+        <i data-lucide="user"></i>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="profile-main">
+    <div class="profile-card">
+
+      <!-- Decorative stars -->
+      <i data-lucide="star" class="deco-star deco-star-1"></i>
+      <i data-lucide="star" class="deco-star deco-star-2"></i>
+
+      <!-- Header -->
+      <div class="profile-header">
+        <div class="profile-icon-wrap">
+          <img src="LogoSUN.png" alt="Sun Logo" style="width: 80px; height: 80px; object-fit: contain;" />
+        </div>
+        <h2>ผูกดวงชะตาของคุณ</h2>
+        <p>กรุณากรอกข้อมูลเพื่อใช้เป็น Context ให้ AI วิเคราะห์พื้นดวงของคุณอย่างแม่นยำ</p>
+      </div>
+
+      <!-- Form -->
+      <form id="profile-form" novalidate>
+        <div class="profile-form-grid">
+
+          <!-- ชื่อ-นามสกุล -->
+          <div class="profile-field col-full">
+            <label for="input-fullname">ชื่อ-นามสกุล</label>
+            <div class="profile-input-wrap">
+              <div class="field-icon"><i data-lucide="user"></i></div>
+              <input id="input-fullname" type="text" class="profile-input" placeholder="เช่น สมชาย ใจดี" required />
+            </div>
+          </div>
+
+          <!-- ชื่อเล่น -->
+          <div class="profile-field">
+            <label for="input-nickname">ชื่อเล่น</label>
+            <div class="profile-input-wrap">
+              <div class="field-icon"><i data-lucide="user"></i></div>
+              <input id="input-nickname" type="text" class="profile-input" placeholder="เช่น ชาย" required />
+            </div>
+          </div>
+
+          <!-- เลขท้ายเบอร์โทรศัพท์ 4 ตัว -->
+          <div class="profile-field">
+            <label for="input-phone-last4">เลขท้ายเบอร์โทร 4 ตัว</label>
+            <div class="profile-input-wrap">
+              <div class="field-icon"><i data-lucide="phone"></i></div>
+              <input
+                id="input-phone-last4"
+                type="text"
+                class="profile-input"
+                maxlength="4"
+                pattern="\d{4}"
+                placeholder="เช่น 9999"
+                required
+                oninput="this.value = this.value.replace(/[^0-9]/g, '');"
+              />
+            </div>
+          </div>
+
+          <!-- วัน / เดือน / ปีเกิด -->
+          <div class="profile-field">
+            <label for="input-birthdate">วัน/เดือน/ปีเกิด</label>
+            <div class="profile-input-wrap">
+              <div class="field-icon"><i data-lucide="calendar"></i></div>
+              <input id="input-birthdate" type="date" class="profile-input" required />
+            </div>
+          </div>
+
+          <!-- เวลาเกิด -->
+          <div class="profile-field">
+            <label for="input-birthtime">เวลาเกิด (เวลาตกฟาก)</label>
+            <div class="profile-input-wrap">
+              <div class="field-icon"><i data-lucide="clock"></i></div>
+              <input id="input-birthtime" type="time" class="profile-input" required />
+            </div>
+            <p class="profile-hint">* หากไม่ทราบแน่ชัด ให้ระบุ 06:00 น.</p>
+          </div>
+
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn-profile-submit" id="btn-save-profile">
+          <i data-lucide="sparkles"></i>
+          บันทึกประวัติดวงดาว
+        </button>
+      </form>
+
+    </div>
+  </main>
+
+  <!-- Toast error (fixed at top of page) -->
+  <div class="toast-error" id="toast-error">
+    <i data-lucide="alert-circle"></i>
+    <span>กรุณากรอกข้อมูลให้ครบถ้วน</span>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // --- Profile form validation ---
+    const profileForm = document.getElementById('profile-form');
+    const toastError = document.getElementById('toast-error');
+    const profileInputs = profileForm.querySelectorAll('.profile-input');
+    let toastTimeout = null;
+    
+    // ตั้งค่า วันเกิด สูงสุดให้เลือกได้แค่วันนี้
+    const birthdateInput = document.getElementById('input-birthdate');
+    if (birthdateInput) {
+      const today = new Date().toISOString().split('T')[0];
+      birthdateInput.setAttribute('max', today);
+    }
+
+    // เมื่อผู้ใช้พิมพ์หรือเลือกค่า ให้ลบ error state ของช่องนั้น
+    profileInputs.forEach(input => {
+      const clearError = () => {
+        if (input.value.trim() !== '') {
+          input.classList.remove('input-error');
+        }
+      };
+      input.addEventListener('input', clearError);
+      input.addEventListener('change', clearError);
+    });
+
+    // แสดง toast แจ้งเตือน
+    function showErrorToast(message = 'กรุณากรอกข้อมูลให้ครบถ้วน') {
+      toastError.querySelector('span').textContent = message;
+      // รีเซ็ต animation ถ้า toast อยู่แล้ว
+      toastError.classList.remove('show');
+      clearTimeout(toastTimeout);
+      // Force reflow เพื่อให้ animation เริ่มใหม่
+      void toastError.offsetWidth;
+      toastError.classList.add('show');
+      toastTimeout = setTimeout(() => {
+        toastError.classList.remove('show');
+      }, 2000);
+    }
+
+    // เมื่อกด Submit → ตรวจทุกช่องพร้อมกัน
+    profileForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      let hasEmpty = false;
+
+      profileInputs.forEach(input => {
+        if (input.value.trim() === '') {
+          // ลบ class ก่อนเพื่อ re-trigger animation
+          input.classList.remove('input-error');
+          void input.offsetWidth;
+          input.classList.add('input-error');
+          hasEmpty = true;
+        } else {
+          input.classList.remove('input-error');
+        }
+      });
+
+      if (hasEmpty) {
+        showErrorToast('กรุณากรอกข้อมูลให้ครบถ้วน');
+        return;
+      }
+
+      // ตรวจสอบห้ามเป็นวันที่ในอนาคต
+      if (birthdateInput && birthdateInput.value) {
+        const selectedDate = new Date(birthdateInput.value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // ตัดเวลาออกเทียบแค่วันที่
+        if (selectedDate > today) {
+          birthdateInput.classList.remove('input-error');
+          void birthdateInput.offsetWidth;
+          birthdateInput.classList.add('input-error');
+          showErrorToast('ไม่สามารถใส่วันที่ในอนาคตได้');
+          return;
+        }
+      }
+
+      // TODO: ส่งข้อมูลไป backend
+      alert('บันทึกข้อมูลสำเร็จ!');
+    });
+  </script>
+</body>
+</html>

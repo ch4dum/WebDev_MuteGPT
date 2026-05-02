@@ -8,6 +8,9 @@
   <link rel="stylesheet" href="styles.css" />
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
 </head>
 <body>
 
@@ -279,7 +282,7 @@
         </div>
 
         <!-- Google Sign In -->
-        <button class="btn-google">
+        <button class="btn-google" id="btn-google-login" onclick="handleGoogleLogin()">
           <svg viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -320,97 +323,7 @@
     </div>
   </div>
 
-  <!-- ===== JAVASCRIPT ===== -->
-  <script>
-    // Initialize Lucide icons
-    lucide.createIcons();
-
-    // --- State ---
-    let authMode = 'login';
-
-    // --- DOM Elements ---
-    const navbar = document.getElementById('navbar');
-    const authModal = document.getElementById('auth-modal');
-    const modalBackdrop = document.getElementById('modal-backdrop');
-    const btnOpenAuth = document.getElementById('btn-open-auth');
-    const btnHeroCta = document.getElementById('btn-hero-cta');
-    const btnCloseModal = document.getElementById('btn-close-modal');
-    const btnToggleMode = document.getElementById('btn-toggle-mode');
-    const modalTitle = document.getElementById('modal-title');
-    const modalSubtitle = document.getElementById('modal-subtitle');
-    const modalToggle = document.getElementById('modal-toggle');
-    const nameField = document.getElementById('name-field');
-    const btnAuthSubmit = document.getElementById('btn-auth-submit');
-
-    // --- Navbar scroll effect ---
-    window.addEventListener('scroll', () => {
-      navbar.classList.toggle('scrolled', window.scrollY > 50);
-    });
-
-    // --- Modal functions ---
-    function openModal() {
-      authModal.classList.add('active');
-      document.body.classList.add('no-scroll');
-    }
-
-    function closeModal() {
-      authModal.classList.remove('active');
-      document.body.classList.remove('no-scroll');
-      setTimeout(() => {
-        authMode = 'login';
-        updateAuthUI();
-      }, 300);
-    }
-
-    function updateAuthUI() {
-      if (authMode === 'login') {
-        modalTitle.textContent = 'เข้าสู่ระบบ MuteGPT';
-        modalSubtitle.textContent = 'เชื่อมต่อจิตวิญญาณและรับคำทำนาย';
-        nameField.classList.add('hidden');
-        btnAuthSubmit.textContent = 'เข้าสู่ระบบ';
-        modalToggle.innerHTML = 'ยังไม่มีบัญชีใช่หรือไม่? <button id="btn-toggle-mode">สร้างบัญชีใหม่</button>';
-      } else {
-        modalTitle.textContent = 'เริ่มต้นการทำนายของคุณ';
-        modalSubtitle.textContent = 'สร้างบัญชีเพื่อบันทึกโปรไฟล์ดวงดาวของคุณ';
-        nameField.classList.remove('hidden');
-        btnAuthSubmit.textContent = 'สมัครสมาชิก';
-        modalToggle.innerHTML = 'มีบัญชีอยู่แล้ว? <button id="btn-toggle-mode">เข้าสู่ระบบ</button>';
-      }
-      // Re-bind toggle button
-      document.getElementById('btn-toggle-mode').addEventListener('click', () => {
-        authMode = authMode === 'login' ? 'register' : 'login';
-        updateAuthUI();
-      });
-    }
-
-    // --- Event listeners ---
-    btnOpenAuth.addEventListener('click', openModal);
-    btnHeroCta.addEventListener('click', openModal);
-    btnCloseModal.addEventListener('click', closeModal);
-    modalBackdrop.addEventListener('click', closeModal);
-    btnToggleMode.addEventListener('click', () => {
-      authMode = authMode === 'login' ? 'register' : 'login';
-      updateAuthUI();
-    });
-
-    // --- Scroll-triggered animations ---
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.style.animationPlayState = 'running';
-        }
-      });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll('.animate-fade-in-up').forEach(el => {
-      el.style.animationPlayState = 'paused';
-      observer.observe(el);
-    });
-    // Let hero animations play immediately
-    document.querySelectorAll('.hero .animate-fade-in-up').forEach(el => {
-      el.style.animationPlayState = 'running';
-    });
-  </script>
-
+  <script src="app.js"></script>
+  <script src="auth.js"></script>
 </body>
 </html>
