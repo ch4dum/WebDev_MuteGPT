@@ -71,10 +71,8 @@
         <i data-lucide="orbit"></i>
         <span class="logo-text">MuteGPT</span>
       </a>
-      <div style="display: flex; gap: 1rem; align-items: center;">
-        <button class="btn-primary" id="btn-logout"
-          style="background: linear-gradient(to right, #ef4444, #991b1b); padding: 0.5rem 1rem; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);"
-          onclick="handleLogout()">ออกจากระบบ</button>
+      <div class="navbar-actions">
+        <button class="btn-primary btn-logout" id="btn-logout" onclick="handleLogout()">ออกจากระบบ</button>
         <div class="navbar-avatar">
           <i data-lucide="user"></i>
         </div>
@@ -392,7 +390,7 @@
 
         if (error) throw error;
 
-         // Success state
+        // Success state
         const btnSubmit = document.getElementById('btn-save-profile');
         btnSubmit.innerHTML = '<i data-lucide="check"></i> บันทึกสำเร็จ!';
         btnSubmit.style.backgroundColor = '#10b981';

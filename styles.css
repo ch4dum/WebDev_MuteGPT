@@ -1468,13 +1468,12 @@ body.no-scroll {
   top: 20px;
   left: 50%;
   transform: translateX(-50%) translateY(-100px);
-  background: #10b981;
-  /* สีเขียว Success */
+  background: linear-gradient(135deg, #059669, #10b981);
   color: white;
   padding: 12px 24px;
-  border-radius: 8px;
+  border-radius: 12px;
   font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
   z-index: 9999;
   transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   display: flex;
@@ -1484,4 +1483,50 @@ body.no-scroll {
 
 .toast-success.show {
   transform: translateX(-50%) translateY(0);
+}
+
+/* ===== NAVBAR LOGOUT BUTTON ===== */
+.btn-logout {
+  background: linear-gradient(to right, #ef4444, #991b1b);
+  padding: 0.5rem 1rem;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+}
+
+.btn-logout:hover {
+  background: linear-gradient(to right, #f87171, #b91c1c);
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.5);
+}
+
+.navbar-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* ===== MAIN PAGE ===== */
+.main-content {
+  padding-top: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.main-hero {
+  margin-top: 2rem;
+}
+
+.card-clickable {
+  cursor: pointer;
+}
+
+.card-clickable:hover {
+  transform: translateY(-5px);
+}
+
+/* ===== SUCCESS BUTTON STATE ===== */
+.btn-profile-submit.success {
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #fff;
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
 }

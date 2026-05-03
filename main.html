@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="MuteGPT — หน้าหลัก ดวงดาวพร้อมให้คำทำนายคุณแล้ว" />
   <title>MuteGPT — หน้าหลัก</title>
   <link rel="stylesheet" href="styles.css" />
   <!-- Lucide Icons CDN -->
@@ -60,8 +61,8 @@
         <i data-lucide="orbit"></i>
         <span class="logo-text">MuteGPT</span>
       </a>
-      <div style="display: flex; gap: 1rem; align-items: center;">
-        <button class="btn-primary" id="btn-logout" style="background: linear-gradient(to right, #ef4444, #991b1b); padding: 0.5rem 1rem; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);" onclick="handleLogout()">ออกจากระบบ</button>
+      <div class="navbar-actions">
+        <button class="btn-primary btn-logout" id="btn-logout" onclick="handleLogout()">ออกจากระบบ</button>
         <div class="navbar-avatar">
           <i data-lucide="user"></i>
         </div>
@@ -70,20 +71,20 @@
   </nav>
 
   <!-- ===== MAIN CONTENT ===== -->
-  <main style="padding-top: 120px; display: flex; flex-direction: column; align-items: center; min-height: 100vh;">
-    
-    <section class="hero" style="margin-top: 2rem;">
+  <main class="main-content">
+
+    <section class="hero main-hero">
       <div class="hero-badge animate-fade-in-up">
         <i data-lucide="moon"></i>
         <span>ยินดีต้อนรับสู่ MuteGPT</span>
         <i data-lucide="sparkles"></i>
       </div>
 
-      <h1 class="animate-fade-in-up delay-100" style="margin-bottom: 2rem;">
+      <h1 class="animate-fade-in-up delay-100">
         ดวงดาวพร้อมให้คำทำนายคุณแล้ว
       </h1>
-      
-      <p class="animate-fade-in-up delay-200" style="margin-bottom: 3rem;">
+
+      <p class="animate-fade-in-up delay-200">
         ระบบกำลังเตรียมการเชื่อมต่อกับ AI Chatbot พยากรณ์ดวงชะตาเฉพาะบุคคลของคุณ...
       </p>
 
@@ -96,9 +97,9 @@
           <h3>แชททำนายดวง (เร็วๆ นี้)</h3>
           <p>พูดคุยกับ AI เพื่อรับคำทำนายที่คำนวณจากพื้นดวงของคุณ</p>
         </div>
-        
+
         <!-- Link to profile edit -->
-        <div class="feature-card animate-fade-in-up delay-100" onclick="window.location.href='user_key_data.html'" style="cursor:pointer; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div class="feature-card card-clickable animate-fade-in-up delay-100" onclick="window.location.href='user_key_data.html'">
           <div class="feature-icon">
             <i data-lucide="user-pen" style="color:#fbbf24; filter:drop-shadow(0 0 8px rgba(251,191,36,0.5));"></i>
           </div>
@@ -114,12 +115,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="auth.js"></script>
   <script src="app.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.lucide) {
-        lucide.createIcons();
-      }
-    });
-  </script>
+
 </body>
 </html>
