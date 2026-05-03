@@ -1474,7 +1474,7 @@ body.no-scroll {
   border-radius: 12px;
   font-weight: 500;
   box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
-  z-index: 9999;
+  z-index: 10000;
   transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   display: flex;
   align-items: center;
@@ -1529,4 +1529,33 @@ body.no-scroll {
   background: linear-gradient(135deg, #059669, #10b981);
   color: #fff;
   box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+}
+
+/* ===== AUTH ERROR TOAST ===== */
+.toast-auth-error {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4);
+  z-index: 10000;
+  transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toast-auth-error.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+.toast-auth-error svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }

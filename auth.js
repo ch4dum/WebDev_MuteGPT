@@ -34,7 +34,7 @@ fetchConfig();
 async function handleEmailAuth(event) {
     event.preventDefault();
     if (!supabaseClient) {
-        alert("ระบบยังไม่พร้อมใช้งาน (Supabase Not Initialized)");
+        showErrorToast("ระบบยังไม่พร้อมใช้งาน กรุณารอสักครู่");
         return;
     }
 
@@ -54,7 +54,12 @@ async function handleEmailAuth(event) {
                 }
             });
             if (error) throw error;
-            alert("สมัครสมาชิกสำเร็จ! กรุณาตรวจสอบอีเมลเพื่อยืนยันตัวตน (ถ้าตั้งค่าไว้)");
+
+            // สมัครสำเร็จ → แสดง toast แล้ว redirect
+            showToast("สมัครสมาชิกสำเร็จ!");
+            setTimeout(() => {
+                window.location.href = 'separator.html';
+            }, 1500);
         } else {
             const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email,
@@ -62,16 +67,16 @@ async function handleEmailAuth(event) {
             });
             if (error) throw error;
 
-            // Login success
+            // Login สำเร็จ → แสดง toast แล้ว redirect
             localStorage.setItem('user', JSON.stringify(data.user));
-            showToast("Login Successful!");
+            showToast("เข้าสู่ระบบสำเร็จ!");
             setTimeout(() => {
-                checkUserProfile(data.user);
-            }, 1000);
+                window.location.href = 'separator.html';
+            }, 1500);
         }
     } catch (err) {
         console.error("Auth Error:", err.message);
-        alert("เกิดข้อผิดพลาด: " + err.message);
+        showErrorToast(err.message || "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง");
     }
 }
 
@@ -80,20 +85,20 @@ async function handleEmailAuth(event) {
  */
 async function handleGoogleLogin() {
     if (!supabaseClient) {
-        alert("ระบบยังไม่พร้อมใช้งาน");
+        showErrorToast("ระบบยังไม่พร้อมใช้งาน กรุณารอสักครู่");
         return;
     }
 
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: window.location.origin + '/index.html'
+            redirectTo: window.location.origin + '/separator.html'
         }
     });
 
     if (error) {
         console.error("Google Login Error:", error.message);
-        alert("ไม่สามารถเข้าสู่ระบบด้วย Google ได้: " + error.message);
+        showErrorToast("ไม่สามารถเข้าสู่ระบบด้วย Google ได้");
     }
 }
 
@@ -122,6 +127,36 @@ function showToast(message) {
 
     // Trigger transition delay
     setTimeout(() => toast.classList.add('show'), 100);
+
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 500);
+    }, 4000);
+}
+
+/**
+ * Creates and displays an error Toast notification.
+ * @param {string} message - The error message to display.
+ */
+function showErrorToast(message) {
+    // Remove existing error toasts
+    document.querySelectorAll('.toast-auth-error').forEach(t => t.remove());
+
+    const toast = document.createElement('div');
+    toast.className = 'toast-auth-error';
+    toast.innerHTML = `<i data-lucide="alert-circle"></i> <span>${message}</span>`;
+    document.body.appendChild(toast);
+
+    if (window.lucide) lucide.createIcons();
+
+    setTimeout(() => toast.classList.add('show'), 100);
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
 }
 
 // Bind event listeners when the DOM is fully loaded
@@ -168,7 +203,7 @@ async function checkUserProfile(user) {
             profile.birth_date && profile.birth_time && profile.gender && profile.zodiac;
         const currentPath = window.location.pathname;
         const isOnProfilePage = currentPath.includes('user_key_data.html');
-        const isIndexPage = currentPath.includes('index.html') || currentPath.endsWith('/');
+        const isLoadingPage = currentPath.includes('separator.html') || currentPath.includes('index.html') || currentPath.endsWith('/');
 
         if (!isProfileComplete) {
             // ไม่เคยกรอก หรือ กรอกไม่ครบ -> ต้องไป user_key_data.html
@@ -177,8 +212,8 @@ async function checkUserProfile(user) {
             }
         } else {
             // กรอกครบแล้ว -> ไป main.html
-            // เพื่อไม่ให้รบกวนถ้าผู้ใช้จงใจเข้าหน้า user_key_data.html เพื่อแก้ข้อมูล จะเด้งเฉพาะถ้าอยู่หน้า index
-            if (isIndexPage) {
+            // เพื่อไม่ให้รบกวนถ้าผู้ใช้จงใจเข้าหน้า user_key_data.html เพื่อแก้ข้อมูล
+            if (isLoadingPage) {
                 window.location.href = 'main.html';
             }
         }
