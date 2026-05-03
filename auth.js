@@ -13,7 +13,7 @@ async function fetchConfig() {
         if (res.ok) {
             const data = await res.json();
             GOOGLE_CLIENT_ID = data.clientId;
-            
+
             // Initialize Supabase Client
             if (data.supabaseUrl && data.supabaseKey) {
                 // @ts-ignore
@@ -61,12 +61,12 @@ async function handleEmailAuth(event) {
                 password
             });
             if (error) throw error;
-            
+
             // Login success
             localStorage.setItem('user', JSON.stringify(data.user));
             showToast("Login Successful!");
             setTimeout(() => {
-                window.location.href = 'user_key_data.html';
+                checkUserProfile(data.user);
             }, 1000);
         }
     } catch (err) {
@@ -87,13 +87,23 @@ async function handleGoogleLogin() {
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: window.location.origin + '/user_key_data.html'
+            redirectTo: window.location.origin + '/index.html'
         }
     });
 
     if (error) {
         console.error("Google Login Error:", error.message);
         alert("ไม่สามารถเข้าสู่ระบบด้วย Google ได้: " + error.message);
+    }
+}
+
+/**
+ * Handles Logout.
+ */
+async function handleLogout() {
+    if (supabaseClient) {
+        await supabaseClient.auth.signOut();
+        window.location.href = 'index.html';
     }
 }
 
@@ -106,7 +116,7 @@ function showToast(message) {
     toast.className = 'toast-success';
     toast.innerHTML = `<i data-lucide="check-circle"></i> <span>${message}</span>`;
     document.body.appendChild(toast);
-    
+
     // Refresh Lucide icons for the new Toast
     if (window.lucide) lucide.createIcons();
 
@@ -120,4 +130,59 @@ document.addEventListener('DOMContentLoaded', () => {
     if (authForm) {
         authForm.addEventListener('submit', handleEmailAuth);
     }
+
+    // รอให้ supabaseClient พร้อมใช้งานแล้วจับ Event การ Login
+    const checkReady = setInterval(() => {
+        if (supabaseClient) {
+            clearInterval(checkReady);
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                // เช็คสถานะเมื่อ Login สำเร็จ หรือโหลดหน้าเว็บมาเจอ Session
+                if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+                    if (session && session.user) {
+                        checkUserProfile(session.user);
+                    }
+                }
+            });
+        }
+    }, 100);
 });
+
+/**
+ * ตรวจสอบสถานะโปรไฟล์ของ User และเลือกหน้าที่จะส่งไป
+ */
+async function checkUserProfile(user) {
+    if (!user) return;
+
+    try {
+        const { data: profile, error } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+        if (error && error.code !== 'PGRST116') {
+            throw error;
+        }
+
+        const isProfileComplete = profile && profile.full_name && profile.nickname && profile.phone_last4 &&
+            profile.birth_date && profile.birth_time && profile.gender && profile.zodiac;
+        const currentPath = window.location.pathname;
+        const isOnProfilePage = currentPath.includes('user_key_data.html');
+        const isIndexPage = currentPath.includes('index.html') || currentPath.endsWith('/');
+
+        if (!isProfileComplete) {
+            // ไม่เคยกรอก หรือ กรอกไม่ครบ -> ต้องไป user_key_data.html
+            if (!isOnProfilePage) {
+                window.location.href = 'user_key_data.html';
+            }
+        } else {
+            // กรอกครบแล้ว -> ไป main.html
+            // เพื่อไม่ให้รบกวนถ้าผู้ใช้จงใจเข้าหน้า user_key_data.html เพื่อแก้ข้อมูล จะเด้งเฉพาะถ้าอยู่หน้า index
+            if (isIndexPage) {
+                window.location.href = 'main.html';
+            }
+        }
+    } catch (err) {
+        console.error("Error checking profile:", err);
+    }
+}

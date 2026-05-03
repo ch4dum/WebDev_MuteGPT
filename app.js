@@ -62,7 +62,7 @@ if (authModal) {
       btnAuthSubmit.textContent = 'สมัครสมาชิก';
       modalToggle.innerHTML = 'มีบัญชีอยู่แล้ว? <button id="btn-toggle-mode">เข้าสู่ระบบ</button>';
     }
-    
+
     // Re-bind toggle button event listener
     const toggleBtn = document.getElementById('btn-toggle-mode');
     if (toggleBtn) {
