@@ -55,7 +55,7 @@
   </div>
 
   <!-- ===== NAVIGATION ===== -->
-  <nav id="navbar" class="navbar scrolled">
+  <nav id="navbar" class="navbar">
     <div class="navbar-inner">
       <a href="index.html" class="logo">
         <i data-lucide="orbit"></i>
@@ -103,6 +103,48 @@
             <div class="profile-input-wrap">
               <div class="field-icon"><i data-lucide="user"></i></div>
               <input id="input-nickname" type="text" class="profile-input" placeholder="เช่น ชาย" required />
+            </div>
+          </div>
+
+          <!-- เพศ -->
+          <div class="profile-field">
+            <label>เพศ</label>
+            <div class="gender-options">
+              <div class="gender-option">
+                <input type="radio" id="gender-male" name="gender" value="male" required>
+                <label for="gender-male" class="gender-label">
+                  ชาย
+                </label>
+              </div>
+              <div class="gender-option">
+                <input type="radio" id="gender-female" name="gender" value="female" required>
+                <label for="gender-female" class="gender-label">
+                  หญิง
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- ราศี -->
+          <div class="profile-field">
+            <label for="input-zodiac">ราศี</label>
+            <div class="profile-input-wrap">
+              <div class="field-icon"><i data-lucide="star"></i></div>
+              <select id="input-zodiac" class="profile-input" required style="appearance: none; -webkit-appearance: none; -moz-appearance: none;">
+                <option value="" disabled selected>เลือกราศีของคุณ</option>
+                <option value="Aries">เมษ (Aries)</option>
+                <option value="Taurus">พฤษภ (Taurus)</option>
+                <option value="Gemini">เมถุน (Gemini)</option>
+                <option value="Cancer">กรกฎ (Cancer)</option>
+                <option value="Leo">สิงห์ (Leo)</option>
+                <option value="Virgo">กันย์ (Virgo)</option>
+                <option value="Libra">ตุลย์ (Libra)</option>
+                <option value="Scorpio">พิจิก (Scorpio)</option>
+                <option value="Sagittarius">ธนู (Sagittarius)</option>
+                <option value="Capricorn">มังกร (Capricorn)</option>
+                <option value="Aquarius">กุมภ์ (Aquarius)</option>
+                <option value="Pisces">มีน (Pisces)</option>
+              </select>
             </div>
           </div>
 
@@ -233,6 +275,19 @@
         }
       });
 
+      const genderSelected = document.querySelector('input[name="gender"]:checked');
+      const genderRadios = document.querySelectorAll('input[name="gender"]');
+      if (!genderSelected) {
+        hasEmpty = true;
+        genderRadios.forEach(radio => {
+          radio.classList.remove('input-error');
+          void radio.offsetWidth;
+          radio.classList.add('input-error');
+        });
+      } else {
+        genderRadios.forEach(radio => radio.classList.remove('input-error'));
+      }
+
       if (hasEmpty) {
         showErrorToast('กรุณากรอกข้อมูลให้ครบถ้วน');
         return;
@@ -261,6 +316,8 @@
           phone_last4: document.getElementById('input-phone-last4').value,
           birth_date: document.getElementById('input-birthdate').value,
           birth_time: document.getElementById('input-birthtime').value,
+          zodiac: document.getElementById('input-zodiac').value,
+          gender: genderSelected.value,
           updated_at: new Date()
         };
 
