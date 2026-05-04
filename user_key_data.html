@@ -138,32 +138,8 @@
             </div>
           </div>
 
-          <!-- ราศี -->
-          <div class="profile-field">
-            <label for="input-zodiac">ราศี</label>
-            <div class="profile-input-wrap">
-              <div class="field-icon"><i data-lucide="star"></i></div>
-              <select id="input-zodiac" class="profile-input" required
-                style="appearance: none; -webkit-appearance: none; -moz-appearance: none;">
-                <option value="" disabled selected>เลือกราศีของคุณ</option>
-                <option value="Aries">เมษ (Aries)</option>
-                <option value="Taurus">พฤษภ (Taurus)</option>
-                <option value="Gemini">เมถุน (Gemini)</option>
-                <option value="Cancer">กรกฎ (Cancer)</option>
-                <option value="Leo">สิงห์ (Leo)</option>
-                <option value="Virgo">กันย์ (Virgo)</option>
-                <option value="Libra">ตุลย์ (Libra)</option>
-                <option value="Scorpio">พิจิก (Scorpio)</option>
-                <option value="Sagittarius">ธนู (Sagittarius)</option>
-                <option value="Capricorn">มังกร (Capricorn)</option>
-                <option value="Aquarius">กุมภ์ (Aquarius)</option>
-                <option value="Pisces">มีน (Pisces)</option>
-              </select>
-            </div>
-          </div>
-
           <!-- เลขท้ายเบอร์โทรศัพท์ 4 ตัว -->
-          <div class="profile-field">
+          <div class="profile-field col-full">
             <label for="input-phone-last4">เลขท้ายเบอร์โทร 4 ตัว</label>
             <div class="profile-input-wrap">
               <div class="field-icon"><i data-lucide="phone"></i></div>
@@ -171,6 +147,7 @@
                 placeholder="เช่น 9999" required oninput="this.value = this.value.replace(/[^0-9]/g, '');" />
             </div>
           </div>
+
 
           <!-- วัน / เดือน / ปีเกิด -->
           <div class="profile-field">
@@ -247,8 +224,6 @@
                 if (profile.phone_last4) document.getElementById('input-phone-last4').value = profile.phone_last4;
                 if (profile.birth_date) document.getElementById('input-birthdate').value = profile.birth_date;
                 if (profile.birth_time) document.getElementById('input-birthtime').value = profile.birth_time;
-                if (profile.zodiac) document.getElementById('input-zodiac').value = profile.zodiac;
-
                 if (profile.gender) {
                   const genderRadio = document.querySelector(`input[name="gender"][value="${profile.gender}"]`);
                   if (genderRadio) genderRadio.checked = true;
@@ -379,7 +354,6 @@
           phone_last4: document.getElementById('input-phone-last4').value,
           birth_date: document.getElementById('input-birthdate').value,
           birth_time: document.getElementById('input-birthtime').value,
-          zodiac: document.getElementById('input-zodiac').value,
           gender: genderSelected.value,
           updated_at: new Date()
         };

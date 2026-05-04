@@ -55,10 +55,20 @@ async function handleEmailAuth(event) {
             });
             if (error) throw error;
 
-            // สมัครสำเร็จ → แสดง toast แล้ว redirect
-            showToast("สมัครสมาชิกสำเร็จ!");
+            // สมัครสำเร็จ → ทำการ Sign Out ทันทีเพื่อบังคับให้ผู้ใช้ต้อง Login เองใหม่
+            await supabaseClient.auth.signOut();
+
+            showToast("สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ");
+            
+            // เปลี่ยนหน้าต่างกลับไปเป็นโหมด Login
             setTimeout(() => {
-                window.location.href = 'separator.html';
+                const toggleBtn = document.getElementById('btn-toggle-mode');
+                if (toggleBtn) toggleBtn.click();
+                
+                // เคลียร์ช่องรหัสผ่าน และชื่อ
+                document.querySelector('input[type="password"]').value = '';
+                const nameInput = document.querySelector('#name-field input');
+                if (nameInput) nameInput.value = '';
             }, 1500);
         } else {
             const { data, error } = await supabaseClient.auth.signInWithPassword({
@@ -200,7 +210,7 @@ async function checkUserProfile(user) {
         }
 
         const isProfileComplete = profile && profile.full_name && profile.nickname && profile.phone_last4 &&
-            profile.birth_date && profile.birth_time && profile.gender && profile.zodiac;
+            profile.birth_date && profile.birth_time && profile.gender;
         const currentPath = window.location.pathname;
         const isOnProfilePage = currentPath.includes('user_key_data.html');
         const isLoadingPage = currentPath.includes('separator.html') || currentPath.includes('index.html') || currentPath.endsWith('/');
