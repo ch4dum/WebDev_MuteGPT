@@ -6,7 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="ผูกดวงชะตา - กรอกข้อมูลพื้นฐานเพื่อให้ MuteGPT วิเคราะห์ดวงชะตาเฉพาะบุคคล" />
   <title>ผูกดวงชะตา — MuteGPT</title>
-  <link rel="stylesheet" href="styles.css" />
+  <!-- นำเข้า Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=2" />
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
@@ -71,10 +73,17 @@
         <i data-lucide="orbit"></i>
         <span class="logo-text">MuteGPT</span>
       </a>
-      <div class="navbar-actions">
-        <button class="btn-primary btn-logout" id="btn-logout" onclick="handleLogout()">ออกจากระบบ</button>
-        <div class="navbar-avatar">
-          <i data-lucide="user"></i>
+
+      <div class="navbar-actions" style="display: flex; align-items: center; gap: 0.75rem;">
+        <button id="btn-logout" onclick="handleLogout()" 
+                style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.875rem; line-height: 1.25rem; font-weight: 600; font-family: inherit; color: white; transition: all 0.3s ease; border: none; cursor: pointer; background: linear-gradient(to right, #ef4444, #991b1b); box-shadow: 0 0 15px rgba(239,68,68,0.4);" 
+                onmouseover="this.style.boxShadow='0 0 25px rgba(239,68,68,0.5)'" 
+                onmouseout="this.style.boxShadow='0 0 15px rgba(239,68,68,0.4)'">
+          <i data-lucide="log-out" style="width: 1rem; height: 1rem;"></i>
+          <span>ออกจากระบบ</span>
+        </button>
+        <div class="navbar-avatar" style="width: 2.5rem; height: 2.5rem; border-radius: 9999px; display: flex; align-items: center; justify-center; border: 1px solid rgba(147,51,234,0.2); background: rgba(88,28,135,0.5); justify-content: center;">
+          <i data-lucide="user" style="width: 1.25rem; height: 1.25rem; color: #fde68a;"></i>
         </div>
       </div>
     </div>

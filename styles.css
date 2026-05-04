@@ -24,7 +24,7 @@ html {
 }
 
 body {
-  font-family: 'Noto Sans Thai', 'Inter', sans-serif;
+  font-family: 'Prompt', sans-serif;
   background: var(--bg-deep);
   color: var(--text-primary);
   min-height: 100vh;
