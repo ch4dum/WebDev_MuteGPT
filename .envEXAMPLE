@@ -2,5 +2,5 @@ GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
-
+GEMINI_API_KEY=YOUR_API_KEY
 # GOOGLE_CLIENT_SECRET ไม่ได้ใช้อะไรในโค้ดใส่ไว้เฉยๆ เผื่อหาไม่เจอ 
