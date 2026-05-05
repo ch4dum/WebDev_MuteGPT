@@ -94,7 +94,3 @@ Open the app through the Node gateway. Do not open the HTML files directly, beca
 
 ---
 **Developed by:** GameNoiAutomation Group (FRA502 Web Programming)
-
-
----
-**Developed by:** GameNoiAutomation Group (FRA502 Web Programming)
