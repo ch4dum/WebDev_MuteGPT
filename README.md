@@ -5,22 +5,19 @@ MuteGPT is a personalized horoscope web application that combines Gemini AI with
 ## Project Structure
 
 ```text
-WebDev_MuteGPT/
-  backend/
-    node/                 # Express gateway, static server, config API (port 3000)
-      server.js
-      package.json
-      .envEXAMPLE
-    python/               # FastAPI AI brain and astrology calculation (port 8000)
-      main.py
-      requirements.txt
-      .env                # Local API keys, ignored by git
-  frontend/               # Client-side HTML/CSS/JS
-    assets/               # Images and icons
-    css/                  # Stylesheets
-    js/                   # App and auth scripts
-    *.html                # Web pages
-  README.md
+/WebDev_MuteGPT
+├── /backend
+│   ├── /node            # Gateway, Static Server & Auth Config (Port 3000)
+│   │   └── server.js
+│   └── /python          # AI Brain & Astrology Calculation (Port 8000)
+│       └── .env         # API Keys Storage    
+│       └── main.py
+├── /frontend            # Client-side files
+│   ├── /assets          # Images, Backgrounds, Icons
+│   ├── /css             # Stylesheets
+│   ├── /js              # Logic & Auth handling
+│   └── *.html           # Web Pages
+└── README.md
 ```
 
 ## Environment Variables
@@ -93,6 +90,10 @@ Open the app through the Node gateway. Do not open the HTML files directly, beca
 - `.env` files are ignored by git and should not be committed.
 - If Gemini returns a quota error, check the Gemini API key, project quota, and billing settings.
 - If port 8000 is already in use, stop the existing Python backend process before starting `uvicorn` again.
+
+
+---
+**Developed by:** GameNoiAutomation Group (FRA502 Web Programming)
 
 
 ---
