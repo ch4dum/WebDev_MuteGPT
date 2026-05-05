@@ -9,7 +9,7 @@ let supabaseClient = null;
  */
 async function fetchConfig() {
     try {
-        const res = await fetch('http://localhost:3000/api/config');
+        const res = await fetch('/api/config');
         if (res.ok) {
             const data = await res.json();
             GOOGLE_CLIENT_ID = data.clientId;
