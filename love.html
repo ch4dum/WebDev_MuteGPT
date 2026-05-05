@@ -1,314 +1,459 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Love Oracle - พยากรณ์ความรัก</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
     <style>
-        /* กำหนดตัวแปรสี (RGB) สำหรับทำ Dynamic Theme */
-        :root {
-            /* โหมดเริ่มต้น / คนโสด (Pink/Old Rose) */
-            --c-primary: 236 72 153;
-            /* pink-500 */
-            --c-secondary: 225 29 72;
-            /* rose-600 */
-            --c-accent: 244 114 182;
-            /* pink-400 */
-            --c-light: 251 207 232;
-            /* pink-200 */
-            --c-dark: 131 24 67;
-            /* pink-900 */
-        }
+      /* กำหนดตัวแปรสี (RGB) สำหรับทำ Dynamic Theme */
+      :root {
+        /* โหมดเริ่มต้น / คนโสด (Pink/Old Rose) */
+        --c-primary: 236 72 153;
+        /* pink-500 */
+        --c-secondary: 225 29 72;
+        /* rose-600 */
+        --c-accent: 244 114 182;
+        /* pink-400 */
+        --c-light: 251 207 232;
+        /* pink-200 */
+        --c-dark: 131 24 67;
+        /* pink-900 */
+      }
 
-        body.theme-single {
-            --c-primary: 236 72 153;
-            --c-secondary: 225 29 72;
-            --c-accent: 244 114 182;
-            --c-light: 251 207 232;
-            --c-dark: 131 24 67;
-        }
+      body.theme-single {
+        --c-primary: 236 72 153;
+        --c-secondary: 225 29 72;
+        --c-accent: 244 114 182;
+        --c-light: 251 207 232;
+        --c-dark: 131 24 67;
+      }
 
-        body.theme-talking {
-            /* คนมีคนคุย (Purple/Magenta) */
-            --c-primary: 168 85 247;
-            /* purple-500 */
-            --c-secondary: 192 38 211;
-            /* fuchsia-600 */
-            --c-accent: 192 132 252;
-            /* purple-400 */
-            --c-light: 233 213 255;
-            /* purple-200 */
-            --c-dark: 88 28 135;
-            /* purple-900 */
-        }
+      body.theme-talking {
+        /* คนมีคนคุย (Purple/Magenta) */
+        --c-primary: 168 85 247;
+        /* purple-500 */
+        --c-secondary: 192 38 211;
+        /* fuchsia-600 */
+        --c-accent: 192 132 252;
+        /* purple-400 */
+        --c-light: 233 213 255;
+        /* purple-200 */
+        --c-dark: 88 28 135;
+        /* purple-900 */
+      }
 
-        body.theme-couple {
-            /* คนมีคู่ (Blue/Navy) */
-            --c-primary: 59 130 246;
-            /* blue-500 */
-            --c-secondary: 67 56 202;
-            /* indigo-600 */
-            --c-accent: 96 165 250;
-            /* blue-400 */
-            --c-light: 191 219 254;
-            /* blue-200 */
-            --c-dark: 30 58 138;
-            /* blue-900 */
-        }
+      body.theme-couple {
+        /* คนมีคู่ (Blue/Navy) */
+        --c-primary: 59 130 246;
+        /* blue-500 */
+        --c-secondary: 67 56 202;
+        /* indigo-600 */
+        --c-accent: 96 165 250;
+        /* blue-400 */
+        --c-light: 191 219 254;
+        /* blue-200 */
+        --c-dark: 30 58 138;
+        /* blue-900 */
+      }
 
-        body.theme-broken {
-            /* คนเพิ่งเลิก (Gray/Silver) */
-            --c-primary: 100 116 139;
-            /* slate-500 */
-            --c-secondary: 71 85 105;
-            /* slate-600 */
-            --c-accent: 148 163 184;
-            /* slate-400 */
-            --c-light: 226 232 240;
-            /* slate-200 */
-            --c-dark: 15 23 42;
-            /* slate-900 */
-        }
+      body.theme-broken {
+        /* คนเพิ่งเลิก (Gray/Silver) */
+        --c-primary: 100 116 139;
+        /* slate-500 */
+        --c-secondary: 71 85 105;
+        /* slate-600 */
+        --c-accent: 148 163 184;
+        /* slate-400 */
+        --c-light: 226 232 240;
+        /* slate-200 */
+        --c-dark: 15 23 42;
+        /* slate-900 */
+      }
 
-        body {
-            font-family: 'Prompt', sans-serif;
-            transition: background-color 0.8s ease;
-        }
+      body {
+        font-family: "Prompt", sans-serif;
+        transition: background-color 0.8s ease;
+      }
 
-        /* Scrollbar อิงตามสีธีม */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
+      /* Scrollbar อิงตามสีธีม */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
 
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
 
-        ::-webkit-scrollbar-thumb {
-            background: rgb(var(--c-primary));
-            border-radius: 4px;
-            transition: background 0.8s ease;
-        }
+      ::-webkit-scrollbar-thumb {
+        background: rgb(var(--c-primary));
+        border-radius: 4px;
+        transition: background 0.8s ease;
+      }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgb(var(--c-secondary));
-        }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgb(var(--c-secondary));
+      }
     </style>
-</head>
+  </head>
 
-<body
-    class="bg-[#050305] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)] theme-single">
-
+  <body
+    class="bg-[#050305] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)] theme-single"
+  >
     <!-- --- BACKGROUND (ใช้ background.jpg เหมือนหน้าอื่นๆ) --- -->
-    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden"
-        style="background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('background.jpg') no-repeat center center fixed; background-size: cover;">
-        <div
-            class="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-purple-900/10 rounded-full blur-[150px] mix-blend-screen">
-        </div>
-        <div
-            class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-amber-900/10 rounded-full blur-[120px] mix-blend-screen">
-        </div>
-        <div class="absolute inset-0 opacity-[0.03]"
-            style="background-image: radial-gradient(circle at center, #ffffff 1px, transparent 1px); background-size: 30px 30px;">
-        </div>
+    <div
+      class="fixed inset-0 z-0 pointer-events-none overflow-hidden"
+      style="
+        background:
+          linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
+          url(&quot;background.jpg&quot;) no-repeat center center fixed;
+        background-size: cover;
+      "
+    >
+      <div
+        class="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-purple-900/10 rounded-full blur-[150px] mix-blend-screen"
+      ></div>
+      <div
+        class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-amber-900/10 rounded-full blur-[120px] mix-blend-screen"
+      ></div>
+      <div
+        class="absolute inset-0 opacity-[0.03]"
+        style="
+          background-image: radial-gradient(
+            circle at center,
+            #ffffff 1px,
+            transparent 1px
+          );
+          background-size: 30px 30px;
+        "
+      ></div>
     </div>
 
     <!-- --- ASTROLOGY & STARS BACKGROUND (Dynamic Theme) --- -->
     <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <!-- Nebula Glow -->
-        <div
-            class="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-[rgb(var(--c-dark)/0.4)] rounded-full blur-[150px] mix-blend-screen theme-transition">
-        </div>
-        <div
-            class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-[rgb(var(--c-secondary)/0.2)] rounded-full blur-[120px] mix-blend-screen theme-transition">
-        </div>
-        <div
-            class="absolute top-[20%] left-[50%] translate-x-[-50%] w-[80%] h-[50%] bg-[rgb(var(--c-primary)/0.1)] rounded-full blur-[180px] mix-blend-screen theme-transition">
-        </div>
-    </div>
+      <!-- Nebula Glow -->
+      <div
+        class="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-[rgb(var(--c-dark)/0.4)] rounded-full blur-[150px] mix-blend-screen theme-transition"
+      ></div>
+      <div
+        class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-[rgb(var(--c-secondary)/0.2)] rounded-full blur-[120px] mix-blend-screen theme-transition"
+      ></div>
+      <div
+        class="absolute top-[20%] left-[50%] translate-x-[-50%] w-[80%] h-[50%] bg-[rgb(var(--c-primary)/0.1)] rounded-full blur-[180px] mix-blend-screen theme-transition"
+      ></div>
     </div>
 
     <!-- NAVBAR (Dynamic Theme) -->
     <nav
-        class="relative z-20 w-full bg-[#050305]/80 backdrop-blur-md border-b border-[rgb(var(--c-primary)/0.2)] py-3 shadow-[0_4px_30px_rgba(0,0,0,0.5)] shrink-0 theme-transition">
-        <div class="container mx-auto px-4 flex justify-between items-center max-w-4xl">
-            <div class="flex items-center gap-4">
-                <a href="main.html"
-                    class="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
-                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                </a>
-                <div class="flex items-center gap-3">
-                    <div
-                        class="w-10 h-10 rounded-full bg-[rgb(var(--c-dark)/0.5)] border border-[rgb(var(--c-primary)/0.3)] flex items-center justify-center shadow-inner theme-transition">
-                        <i data-lucide="heart" class="w-5 h-5 text-[rgb(var(--c-accent))] theme-transition"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-xl font-bold text-white leading-none tracking-wide">Love Oracle 💖</h1>
-                        <p class="text-[11px] text-[rgb(var(--c-light))] mt-1 theme-transition">AI พยากรณ์ดวงความรักเฉพาะคุณ</p>
-                    </div>
-                </div>
+      class="relative z-20 w-full bg-[#050305]/80 backdrop-blur-md border-b border-[rgb(var(--c-primary)/0.2)] py-3 shadow-[0_4px_30px_rgba(0,0,0,0.5)] shrink-0 theme-transition"
+    >
+      <div
+        class="container mx-auto px-4 flex justify-between items-center max-w-4xl"
+      >
+        <div class="flex items-center gap-4">
+          <a
+            href="main.html"
+            class="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+          >
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+          </a>
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-full bg-[rgb(var(--c-dark)/0.5)] border border-[rgb(var(--c-primary)/0.3)] flex items-center justify-center shadow-inner theme-transition"
+            >
+              <i
+                data-lucide="heart"
+                class="w-5 h-5 text-[rgb(var(--c-accent))] theme-transition"
+              ></i>
             </div>
-
-            <!-- ปุ่มออกจากระบบ + ไอคอนโปรไฟล์ -->
-            <div class="flex items-center gap-3 relative">
-                <div id="avatar-btn"
-                    class="w-10 h-10 rounded-full flex items-center justify-center border cursor-pointer hover:scale-105 transition-all bg-[rgb(var(--c-dark)/0.5)] border-[rgb(var(--c-primary)/0.3)] shadow-[0_0_15px_rgb(var(--c-primary)/0.2)] theme-transition">
-                    <i data-lucide="user" class="w-5 h-5 text-[rgb(var(--c-accent))] theme-transition"></i>
-                </div>
-
-                <!-- Account Popup -->
-                <div id="account-popup"
-                    class="absolute top-[calc(100%+10px)] right-0 bg-[#0a0514]/95 backdrop-blur-xl rounded-3xl w-[340px] shadow-[0_10px_40px_rgba(0,0,0,0.8),0_0_20px_rgb(var(--c-primary)/0.2)] border border-[rgb(var(--c-primary)/0.3)] z-[100] overflow-hidden theme-transition"
-                    style="display: none; font-family: 'Inter', 'Prompt', sans-serif;">
-                    <div class="p-6 text-center relative">
-                        <button id="close-popup"
-                            class="absolute top-4 right-4 bg-transparent border-none text-slate-400 hover:text-[rgb(var(--c-accent))] cursor-pointer transition-colors theme-transition">
-                            <i data-lucide="x" class="w-5 h-5"></i>
-                        </button>
-                        <div id="popup-email"
-                            class="text-slate-50 text-[0.95rem] font-medium mb-1 break-all">
-                            loading...</div>
-                        <div id="popup-managed" class="text-slate-400 text-xs mb-6"></div>
-
-                        <div id="popup-avatar-large"
-                            class="w-20 h-20 rounded-full bg-gradient-to-br from-[rgb(var(--c-dark)/0.8)] to-[rgb(var(--c-primary)/0.5)] border border-[rgb(var(--c-accent)/0.4)] text-[rgb(var(--c-light))] flex items-center justify-center text-4xl mx-auto mb-4 relative shadow-[0_0_15px_rgb(var(--c-primary)/0.4)] theme-transition">
-                            <span id="popup-avatar-letter"></span>
-                            <div
-                                class="absolute -bottom-0.5 -right-0.5 bg-[#0a0514] border border-[rgb(var(--c-primary)/0.5)] rounded-full p-1.5 flex theme-transition">
-                                <i data-lucide="camera" class="w-3.5 h-3.5 text-[rgb(var(--c-light))] theme-transition"></i>
-                            </div>
-                        </div>
-
-                        <div id="popup-greeting"
-                            class="bg-gradient-to-r from-[rgb(var(--c-light))] to-[rgb(var(--c-accent))] bg-clip-text text-transparent text-xl font-bold mb-6 theme-transition">
-                            Hi!</div>
-
-                        <button onclick="handleLogout()"
-                            class="bg-gradient-to-r from-red-500 to-red-800 text-white py-2 px-5 rounded-full border-none text-sm font-semibold cursor-pointer transition-all shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)] hover:-translate-y-[1px] inline-flex items-center justify-center gap-2">
-                            <i data-lucide="log-out" class="w-4 h-4"></i>
-                            ออกจากระบบ
-                        </button>
-                    </div>
-                </div>
+            <div>
+              <h1
+                class="text-xl font-bold text-white leading-none tracking-wide"
+              >
+                Love Oracle 💖
+              </h1>
+              <p
+                class="text-[11px] text-[rgb(var(--c-light))] mt-1 theme-transition"
+              >
+                AI พยากรณ์ดวงความรักเฉพาะคุณ
+              </p>
             </div>
+          </div>
         </div>
+
+        <!-- ปุ่มออกจากระบบ + ไอคอนโปรไฟล์ -->
+        <div class="flex items-center gap-3 relative">
+          <div
+            id="avatar-btn"
+            class="w-10 h-10 rounded-full flex items-center justify-center border cursor-pointer hover:scale-105 transition-all bg-[rgb(var(--c-dark)/0.5)] border-[rgb(var(--c-primary)/0.3)] shadow-[0_0_15px_rgb(var(--c-primary)/0.2)] theme-transition"
+          >
+            <i
+              data-lucide="user"
+              class="w-5 h-5 text-[rgb(var(--c-accent))] theme-transition"
+            ></i>
+          </div>
+
+          <!-- Account Popup -->
+          <div
+            id="account-popup"
+            class="absolute top-[calc(100%+10px)] right-0 bg-[#0a0514]/95 backdrop-blur-xl rounded-3xl w-[340px] shadow-[0_10px_40px_rgba(0,0,0,0.8),0_0_20px_rgb(var(--c-primary)/0.2)] border border-[rgb(var(--c-primary)/0.3)] z-[100] overflow-hidden theme-transition"
+            style="
+              display: none;
+              font-family: &quot;Inter&quot;, &quot;Prompt&quot;, sans-serif;
+            "
+          >
+            <div class="p-6 text-center relative">
+              <button
+                id="close-popup"
+                class="absolute top-4 right-4 bg-transparent border-none text-slate-400 hover:text-[rgb(var(--c-accent))] cursor-pointer transition-colors theme-transition"
+              >
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+              <div
+                id="popup-email"
+                class="text-slate-50 text-[0.95rem] font-medium mb-1 break-all"
+              >
+                loading...
+              </div>
+              <div id="popup-managed" class="text-slate-400 text-xs mb-6"></div>
+
+              <div
+                id="popup-avatar-large"
+                class="w-20 h-20 rounded-full bg-gradient-to-br from-[rgb(var(--c-dark)/0.8)] to-[rgb(var(--c-primary)/0.5)] border border-[rgb(var(--c-accent)/0.4)] text-[rgb(var(--c-light))] flex items-center justify-center text-4xl mx-auto mb-4 relative shadow-[0_0_15px_rgb(var(--c-primary)/0.4)] theme-transition"
+              >
+                <span id="popup-avatar-letter"></span>
+                <div
+                  class="absolute -bottom-0.5 -right-0.5 bg-[#0a0514] border border-[rgb(var(--c-primary)/0.5)] rounded-full p-1.5 flex theme-transition"
+                >
+                  <i
+                    data-lucide="camera"
+                    class="w-3.5 h-3.5 text-[rgb(var(--c-light))] theme-transition"
+                  ></i>
+                </div>
+              </div>
+
+              <div
+                id="popup-greeting"
+                class="bg-gradient-to-r from-[rgb(var(--c-light))] to-[rgb(var(--c-accent))] bg-clip-text text-transparent text-xl font-bold mb-6 theme-transition"
+              >
+                Hi!
+              </div>
+
+              <button
+                onclick="handleLogout()"
+                class="bg-gradient-to-r from-red-500 to-red-800 text-white py-2 px-5 rounded-full border-none text-sm font-semibold cursor-pointer transition-all shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)] hover:-translate-y-[1px] inline-flex items-center justify-center gap-2"
+              >
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+                ออกจากระบบ
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </nav>
 
     <!-- CHAT AREA -->
     <main
-        class="relative z-10 flex-1 w-full max-w-4xl mx-auto flex flex-col min-h-0 bg-[#0a0508]/50 backdrop-blur-sm border-x border-white/5 shadow-2xl">
-
-        <div id="chat-messages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scroll-smooth">
-            <!-- ข้อความต้อนรับ -->
-            <div class="flex gap-3 msg-animate">
-                <div
-                    class="w-10 h-10 rounded-full bg-gradient-to-br from-[rgb(var(--c-primary))] to-[rgb(var(--c-dark))] border border-[rgb(var(--c-accent))] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgb(var(--c-accent)/0.3)] mt-1 theme-transition">
-                    <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
-                </div>
-                <div class="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] w-full">
-                    <span class="text-xs text-[rgb(var(--c-light))] ml-1 theme-transition">แม่หมอ AI</span>
-                    <div
-                        class="bg-[#12050a]/90 p-4 rounded-2xl rounded-tl-sm border border-[rgb(var(--c-primary)/0.3)] text-slate-200 text-sm md:text-base leading-relaxed shadow-lg theme-transition">
-                        สวัสดีค่ะ ยินดีต้อนรับสู่ Love Oracle นะคะ ✨<br><br>
-                        เพื่อให้คำทำนายแม่นยำและตรงจุดที่สุด แม่หมอขออนุญาตทราบ <b>"สถานะหัวใจ"</b>
-                        ของคุณในตอนนี้ก่อนนะคะ
-                    </div>
-                </div>
+      class="relative z-10 flex-1 w-full max-w-4xl mx-auto flex flex-col min-h-0 bg-[#0a0508]/50 backdrop-blur-sm border-x border-white/5 shadow-2xl"
+    >
+      <div
+        id="chat-messages"
+        class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scroll-smooth"
+      >
+        <!-- ข้อความต้อนรับ -->
+        <div class="flex gap-3 msg-animate">
+          <div
+            class="w-10 h-10 rounded-full bg-gradient-to-br from-[rgb(var(--c-primary))] to-[rgb(var(--c-dark))] border border-[rgb(var(--c-accent))] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgb(var(--c-accent)/0.3)] mt-1 theme-transition"
+          >
+            <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+          </div>
+          <div class="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] w-full">
+            <span
+              class="text-xs text-[rgb(var(--c-light))] ml-1 theme-transition"
+              >แม่หมอ AI</span
+            >
+            <div
+              class="bg-[#12050a]/90 p-4 rounded-2xl rounded-tl-sm border border-[rgb(var(--c-primary)/0.3)] text-slate-200 text-sm md:text-base leading-relaxed shadow-lg theme-transition"
+            >
+              สวัสดีค่ะ ยินดีต้อนรับสู่ Love Oracle นะคะ ✨<br /><br />
+              เพื่อให้คำทำนายแม่นยำและตรงจุดที่สุด แม่หมอขออนุญาตทราบ
+              <b>"สถานะหัวใจ"</b>
+              ของคุณในตอนนี้ก่อนนะคะ
             </div>
-
-            <!-- ตัวเลือกสถานะ (คงสีเดิมไว้เพื่อให้ผู้ใช้เห็นความแตกต่างของแต่ละโหมดก่อนกด) -->
-            <div id="status-selection" class="flex flex-col gap-3 pl-14 pr-4 msg-animate"
-                style="animation-delay: 0.5s;">
-                <!-- คนโสด (Pink) -->
-                <button onclick="selectStatus('single', 'คนโสด', 'การเจอเนื้อคู่ หรือเสน่ห์ในช่วงนี้')"
-                    class="w-full text-left p-4 rounded-xl border border-pink-500/30 bg-[#1a0511]/60 hover:bg-[#240a1a]/80 transition-all flex items-center gap-4 group shadow-md">
-                    <div
-                        class="w-10 h-10 rounded-full bg-pink-500/20 border border-pink-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
-                        <i data-lucide="user" class="w-5 h-5 text-pink-400"></i></div>
-                    <div>
-                        <div class="font-bold text-pink-200">คนโสด (Single)</div>
-                        <div class="text-xs text-slate-400 mt-0.5">เน้นเรื่องการเจอเนื้อคู่ เสน่ห์ หรือคนที่จะเข้ามา
-                        </div>
-                    </div>
-                </button>
-                <!-- คนมีคนคุย (Purple) -->
-                <button onclick="selectStatus('talking', 'คนมีคนคุย', 'ความชัดเจน และความรู้สึกของอีกฝ่าย')"
-                    class="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-[#110a24]/60 hover:bg-[#1a0f36]/80 transition-all flex items-center gap-4 group shadow-md">
-                    <div
-                        class="w-10 h-10 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
-                        <i data-lucide="message-circle-heart" class="w-5 h-5 text-purple-400"></i></div>
-                    <div>
-                        <div class="font-bold text-purple-200">คนมีคนคุย (Talking)</div>
-                        <div class="text-xs text-slate-400 mt-0.5">เน้นเรื่องความชัดเจน เขารู้สึกยังไงกับเรา</div>
-                    </div>
-                </button>
-                <!-- คนมีคู่ (Blue) -->
-                <button
-                    onclick="selectStatus('couple', 'คนมีคู่/มีแฟน', 'ความสัมพันธ์ ความมั่นคง หรือสิ่งที่ต้องระวัง')"
-                    class="w-full text-left p-4 rounded-xl border border-blue-500/30 bg-[#0a1124]/60 hover:bg-[#0f1a36]/80 transition-all flex items-center gap-4 group shadow-md">
-                    <div
-                        class="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
-                        <i data-lucide="users" class="w-5 h-5 text-blue-400"></i></div>
-                    <div>
-                        <div class="font-bold text-blue-200">คนมีคู่/มีแฟน (In a relationship)</div>
-                        <div class="text-xs text-slate-400 mt-0.5">เน้นเรื่องความสัมพันธ์ ความมั่นคง สิ่งที่ต้องระวัง
-                        </div>
-                    </div>
-                </button>
-                <!-- คนเพิ่งเลิก (Gray) -->
-                <button onclick="selectStatus('broken', 'คนเพิ่งเลิก', 'โอกาสการกลับมา หรือการ Move on')"
-                    class="w-full text-left p-4 rounded-xl border border-slate-500/30 bg-[#1a1a1a]/60 hover:bg-[#242424]/80 transition-all flex items-center gap-4 group shadow-md">
-                    <div
-                        class="w-10 h-10 rounded-full bg-slate-500/20 border border-slate-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
-                        <i data-lucide="heart-crack" class="w-5 h-5 text-slate-400"></i></div>
-                    <div>
-                        <div class="font-bold text-slate-200">คนเพิ่งเลิก (Recently broken up)</div>
-                        <div class="text-xs text-slate-400 mt-0.5">เน้นเรื่องโอกาสการกลับมา หรือแนวทางการ Move on</div>
-                    </div>
-                </button>
-            </div>
+          </div>
         </div>
 
-        <!-- Typing Indicator -->
-        <div id="typing-indicator" class="hidden px-4 md:px-6 pb-4 shrink-0">
-            <div class="flex gap-3">
-                <div
-                    class="w-8 h-8 rounded-full bg-[rgb(var(--c-dark)/0.5)] border border-[rgb(var(--c-accent)/0.5)] flex items-center justify-center shrink-0 theme-transition">
-                    <i data-lucide="sparkles" class="w-4 h-4 text-[rgb(var(--c-light))] theme-transition"></i>
-                </div>
-                <div
-                    class="bg-[#12050a]/90 py-3 px-4 rounded-2xl rounded-tl-sm border border-[rgb(var(--c-primary)/0.3)] flex gap-1 items-center w-fit shadow-lg theme-transition">
-                    <div class="w-2 h-2 rounded-full typing-dot bg-[rgb(var(--c-accent))] opacity-70 theme-transition">
-                    </div>
-                    <div class="w-2 h-2 rounded-full typing-dot bg-[rgb(var(--c-accent))] opacity-70 theme-transition">
-                    </div>
-                    <div class="w-2 h-2 rounded-full typing-dot bg-[rgb(var(--c-accent))] opacity-70 theme-transition">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- INPUT AREA -->
+        <!-- ตัวเลือกสถานะ (คงสีเดิมไว้เพื่อให้ผู้ใช้เห็นความแตกต่างของแต่ละโหมดก่อนกด) -->
         <div
-            class="w-full bg-[#050305]/90 backdrop-blur-xl border-t border-[rgb(var(--c-primary)/0.3)] p-4 shrink-0 relative z-20 theme-transition">
-            <div class="max-w-4xl mx-auto relative flex items-center gap-2">
-                <input type="text" id="user-input" disabled placeholder="กรุณาเลือกสถานะด้านบนก่อนนะคะ..."
-                    class="w-full bg-[#0f050a] border border-slate-700 focus:border-[rgb(var(--c-primary))] text-white rounded-full py-3 px-6 pr-14 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-inner"
-                    onkeydown="if(event.key === 'Enter') { sendMessage(); }">
-                <button id="send-btn" disabled onclick="sendMessage()"
-                    class="absolute right-2 top-1.5 w-10 h-10 rounded-full bg-gradient-to-r from-[rgb(var(--c-primary))] to-[rgb(var(--c-secondary))] flex items-center justify-center text-white hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_10px_rgb(var(--c-accent)/0.4)] theme-transition">
-                    <i data-lucide="send" class="w-4 h-4 ml-1"></i>
-                </button>
+          id="status-selection"
+          class="flex flex-col gap-3 pl-14 pr-4 msg-animate"
+          style="animation-delay: 0.5s"
+        >
+          <!-- คนโสด (Pink) -->
+          <button
+            onclick="
+              selectStatus(
+                'single',
+                'คนโสด',
+                'การเจอเนื้อคู่ หรือเสน่ห์ในช่วงนี้',
+              )
+            "
+            class="w-full text-left p-4 rounded-xl border border-pink-500/30 bg-[#1a0511]/60 hover:bg-[#240a1a]/80 transition-all flex items-center gap-4 group shadow-md"
+          >
+            <div
+              class="w-10 h-10 rounded-full bg-pink-500/20 border border-pink-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
+            >
+              <i data-lucide="user" class="w-5 h-5 text-pink-400"></i>
             </div>
-            <p class="text-center text-[10px] text-slate-500 mt-2">AI อาจให้คำทำนายที่ไม่ถูกต้องเสมอไป โปรดใช้วิจารณญาณ
-            </p>
+            <div>
+              <div class="font-bold text-pink-200">คนโสด (Single)</div>
+              <div class="text-xs text-slate-400 mt-0.5">
+                เน้นเรื่องการเจอเนื้อคู่ เสน่ห์ หรือคนที่จะเข้ามา
+              </div>
+            </div>
+          </button>
+          <!-- คนมีคนคุย (Purple) -->
+          <button
+            onclick="
+              selectStatus(
+                'talking',
+                'คนมีคนคุย',
+                'ความชัดเจน และความรู้สึกของอีกฝ่าย',
+              )
+            "
+            class="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-[#110a24]/60 hover:bg-[#1a0f36]/80 transition-all flex items-center gap-4 group shadow-md"
+          >
+            <div
+              class="w-10 h-10 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
+            >
+              <i
+                data-lucide="message-circle-heart"
+                class="w-5 h-5 text-purple-400"
+              ></i>
+            </div>
+            <div>
+              <div class="font-bold text-purple-200">คนมีคนคุย (Talking)</div>
+              <div class="text-xs text-slate-400 mt-0.5">
+                เน้นเรื่องความชัดเจน เขารู้สึกยังไงกับเรา
+              </div>
+            </div>
+          </button>
+          <!-- คนมีคู่ (Blue) -->
+          <button
+            onclick="
+              selectStatus(
+                'couple',
+                'คนมีคู่/มีแฟน',
+                'ความสัมพันธ์ ความมั่นคง หรือสิ่งที่ต้องระวัง',
+              )
+            "
+            class="w-full text-left p-4 rounded-xl border border-blue-500/30 bg-[#0a1124]/60 hover:bg-[#0f1a36]/80 transition-all flex items-center gap-4 group shadow-md"
+          >
+            <div
+              class="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
+            >
+              <i data-lucide="users" class="w-5 h-5 text-blue-400"></i>
+            </div>
+            <div>
+              <div class="font-bold text-blue-200">
+                คนมีคู่/มีแฟน (In a relationship)
+              </div>
+              <div class="text-xs text-slate-400 mt-0.5">
+                เน้นเรื่องความสัมพันธ์ ความมั่นคง สิ่งที่ต้องระวัง
+              </div>
+            </div>
+          </button>
+          <!-- คนเพิ่งเลิก (Gray) -->
+          <button
+            onclick="
+              selectStatus(
+                'broken',
+                'คนเพิ่งเลิก',
+                'โอกาสการกลับมา หรือการ Move on',
+              )
+            "
+            class="w-full text-left p-4 rounded-xl border border-slate-500/30 bg-[#1a1a1a]/60 hover:bg-[#242424]/80 transition-all flex items-center gap-4 group shadow-md"
+          >
+            <div
+              class="w-10 h-10 rounded-full bg-slate-500/20 border border-slate-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
+            >
+              <i data-lucide="heart-crack" class="w-5 h-5 text-slate-400"></i>
+            </div>
+            <div>
+              <div class="font-bold text-slate-200">
+                คนเพิ่งเลิก (Recently broken up)
+              </div>
+              <div class="text-xs text-slate-400 mt-0.5">
+                เน้นเรื่องโอกาสการกลับมา หรือแนวทางการ Move on
+              </div>
+            </div>
+          </button>
         </div>
+      </div>
 
+      <!-- Typing Indicator -->
+      <div id="typing-indicator" class="hidden px-4 md:px-6 pb-4 shrink-0">
+        <div class="flex gap-3">
+          <div
+            class="w-8 h-8 rounded-full bg-[rgb(var(--c-dark)/0.5)] border border-[rgb(var(--c-accent)/0.5)] flex items-center justify-center shrink-0 theme-transition"
+          >
+            <i
+              data-lucide="sparkles"
+              class="w-4 h-4 text-[rgb(var(--c-light))] theme-transition"
+            ></i>
+          </div>
+          <div
+            class="bg-[#12050a]/90 py-3 px-4 rounded-2xl rounded-tl-sm border border-[rgb(var(--c-primary)/0.3)] flex gap-1 items-center w-fit shadow-lg theme-transition"
+          >
+            <div
+              class="w-2 h-2 rounded-full typing-dot bg-[rgb(var(--c-accent))] opacity-70 theme-transition"
+            ></div>
+            <div
+              class="w-2 h-2 rounded-full typing-dot bg-[rgb(var(--c-accent))] opacity-70 theme-transition"
+            ></div>
+            <div
+              class="w-2 h-2 rounded-full typing-dot bg-[rgb(var(--c-accent))] opacity-70 theme-transition"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INPUT AREA -->
+      <div
+        class="w-full bg-[#050305]/90 backdrop-blur-xl border-t border-[rgb(var(--c-primary)/0.3)] p-4 shrink-0 relative z-20 theme-transition"
+      >
+        <div class="max-w-4xl mx-auto relative flex items-center gap-2">
+          <input
+            type="text"
+            id="user-input"
+            disabled
+            placeholder="กรุณาเลือกสถานะด้านบนก่อนนะคะ..."
+            class="w-full bg-[#0f050a] border border-slate-700 focus:border-[rgb(var(--c-primary))] text-white rounded-full py-3 px-6 pr-14 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-inner"
+            onkeydown="
+              if (event.key === 'Enter') {
+                sendMessage();
+              }
+            "
+          />
+          <button
+            id="send-btn"
+            disabled
+            onclick="sendMessage()"
+            class="absolute right-2 top-1.5 w-10 h-10 rounded-full bg-gradient-to-r from-[rgb(var(--c-primary))] to-[rgb(var(--c-secondary))] flex items-center justify-center text-white hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_10px_rgb(var(--c-accent)/0.4)] theme-transition"
+          >
+            <i data-lucide="send" class="w-4 h-4 ml-1"></i>
+          </button>
+        </div>
+        <p class="text-center text-[10px] text-slate-500 mt-2">
+          AI อาจให้คำทำนายที่ไม่ถูกต้องเสมอไป โปรดใช้วิจารณญาณ
+        </p>
+      </div>
     </main>
 
     <!-- Supabase SDK & App Scripts -->
@@ -316,39 +461,38 @@
     <script src="auth.js"></script>
     <script src="app.js"></script>
     <script>
+      lucide.createIcons();
 
-        lucide.createIcons();
+      let chatState = "AWAITING_STATUS";
+      let userData = {
+        statusKey: "",
+        statusLabel: "",
+        statusFocus: "",
+        question: "",
+      };
 
-        let chatState = 'AWAITING_STATUS';
-        let userData = {
-            statusKey: '',
-            statusLabel: '',
-            statusFocus: '',
-            question: ''
-        };
+      const chatMessages = document.getElementById("chat-messages");
+      const userInput = document.getElementById("user-input");
+      const sendBtn = document.getElementById("send-btn");
+      const typingIndicator = document.getElementById("typing-indicator");
 
-        const chatMessages = document.getElementById('chat-messages');
-        const userInput = document.getElementById('user-input');
-        const sendBtn = document.getElementById('send-btn');
-        const typingIndicator = document.getElementById('typing-indicator');
+      function scrollToBottom() {
+        setTimeout(() => {
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }, 100);
+      }
 
-        function scrollToBottom() {
-            setTimeout(() => {
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }, 100);
+      function showTyping(show) {
+        if (show) {
+          typingIndicator.classList.remove("hidden");
+          scrollToBottom();
+        } else {
+          typingIndicator.classList.add("hidden");
         }
+      }
 
-        function showTyping(show) {
-            if (show) {
-                typingIndicator.classList.remove('hidden');
-                scrollToBottom();
-            } else {
-                typingIndicator.classList.add('hidden');
-            }
-        }
-
-        function appendUserMessage(text) {
-            const msgHTML = `
+      function appendUserMessage(text) {
+        const msgHTML = `
                 <div class="flex gap-3 justify-end msg-animate">
                     <div class="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] items-end">
                         <div class="bg-gradient-to-br from-[rgb(var(--c-primary))] to-[rgb(var(--c-secondary))] p-4 rounded-2xl rounded-tr-sm text-white text-sm md:text-base leading-relaxed shadow-lg theme-transition">
@@ -360,12 +504,12 @@
                     </div>
                 </div>
             `;
-            chatMessages.insertAdjacentHTML('beforeend', msgHTML);
-            scrollToBottom();
-        }
+        chatMessages.insertAdjacentHTML("beforeend", msgHTML);
+        scrollToBottom();
+      }
 
-        function appendAIMessage(text) {
-            const msgHTML = `
+      function appendAIMessage(text) {
+        const msgHTML = `
                 <div class="flex gap-3 msg-animate w-full">
                     <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[rgb(var(--c-primary))] to-[rgb(var(--c-dark))] border border-[rgb(var(--c-accent))] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgb(var(--c-accent)/0.3)] mt-1 theme-transition">
                         <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
@@ -378,82 +522,128 @@
                     </div>
                 </div>
             `;
-            chatMessages.insertAdjacentHTML('beforeend', msgHTML);
-            lucide.createIcons();
-            scrollToBottom();
-        }
+        chatMessages.insertAdjacentHTML("beforeend", msgHTML);
+        lucide.createIcons();
+        scrollToBottom();
+      }
 
-        // 1. ผู้ใช้กดเลือกสถานะ
-        function selectStatus(key, label, focus) {
-            if (chatState !== 'AWAITING_STATUS') return;
+      // 1. ผู้ใช้กดเลือกสถานะ
+      function selectStatus(key, label, focus) {
+        if (chatState !== "AWAITING_STATUS") return;
 
-            userData.statusKey = key;
-            userData.statusLabel = label;
-            userData.statusFocus = focus;
+        userData.statusKey = key;
+        userData.statusLabel = label;
+        userData.statusFocus = focus;
 
-            // 🌟 จุดสำคัญ: เปลี่ยนสีธีมทั้งหน้าเว็บไซต์ด้วยการเติมคลาสให้กับ body
-            document.body.className = `bg-[#050305] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)] theme-${key}`;
+        // 🌟 จุดสำคัญ: เปลี่ยนสีธีมทั้งหน้าเว็บไซต์ด้วยการเติมคลาสให้กับ body
+        document.body.className = `bg-[#050305] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)] theme-${key}`;
 
-            // ซ่อนปุ่มเลือกสถานะ
-            document.getElementById('status-selection').style.display = 'none';
+        // ซ่อนปุ่มเลือกสถานะ
+        document.getElementById("status-selection").style.display = "none";
 
-            appendUserMessage(`สถานะตอนนี้: <b>${label}</b>`);
-            showTyping(true);
-
-            setTimeout(() => {
-                showTyping(false);
-                chatState = 'AWAITING_QUESTION';
-
-                // เปิดให้พิมพ์ช่องแชท
-                userInput.disabled = false;
-                sendBtn.disabled = false;
-                userInput.placeholder = "พิมพ์เรื่องที่อยากรู้ (เช่น เขาคิดยังไง, เมื่อไหร่จะมีแฟน)...";
-                userInput.focus();
-
-                let aiReply = `แม่หมอสัมผัสพลังงานของคุณได้แล้วค่ะ ตอนนี้คุณกำลังอยู่ในสถานะ <span class="text-[rgb(var(--c-accent))] font-bold theme-transition">${label}</span> สินะคะ 🔮<br><br>`;
-
-                if (key === 'single') aiReply += `สำหรับคนโสด แม่หมอจะช่วยดูแนวโน้มการเจอเนื้อคู่ คนที่ใช่ หรือวิธีเปิดทางให้ความรักเข้ามาหาคุณนะคะ 🌸`;
-                else if (key === 'talking') aiReply += `สถานะคนคุยมันก็แอบอึดอัดใจเนอะ... แม่หมอเข้าใจค่ะ เดี๋ยวเรามาเปิดดวงดูความรู้สึกที่แท้จริงของเขาและความชัดเจนกันนะคะ ✨`;
-                else if (key === 'couple') aiReply += `ความรักเป็นเรื่องของการประคองคู่เนอะ แม่หมอจะช่วยดูเรื่องความมั่นคงและสิ่งที่ควรระวังเพื่อเสริมดวงคู่ให้แข็งแรงขึ้นค่ะ 🌊`;
-                else if (key === 'broken') aiReply += `กอดแน่นๆ เลยนะคะคนเก่ง... เดี๋ยวแม่หมอจะช่วยเช็กดวงให้ ว่าเขายังมีใจไหม โอกาสรีเทิร์นมีหรือเปล่า หรือจักรวาลอยากให้คุณเปิดรับคนใหม่ที่ดีกว่า 🌧️`;
-
-                aiReply += `<br><br><b>สูดหายใจลึกๆ ทำสมาธิสักนิดนะคะ... มีเรื่องอะไรที่อยู่ในใจ พิมพ์เล่าให้แม่หมอฟังได้เลย แม่หมอพร้อมรับฟังและหาคำตอบให้ค่ะ</b>`;
-
-                appendAIMessage(aiReply);
-            }, 1000);
-        }
-
-        // 2. ส่งคำถามและสร้าง Prompt สำหรับ Gemini
-        async function sendMessage() {
-    const text = userInput.value.trim();
-    if (!text) return;
-
-    appendUserMessage(text);
-    userInput.value = '';
-
-    if (chatState === 'AWAITING_QUESTION' || chatState === 'CHATTING') {
-        userData.question = text;
+        appendUserMessage(`สถานะตอนนี้: <b>${label}</b>`);
         showTyping(true);
-        userInput.disabled = true;
 
-        const systemPrompt = `คุณคือ "แม่หมอความรัก" ...`;
+        setTimeout(() => {
+          showTyping(false);
+          chatState = "AWAITING_QUESTION";
 
-        const userContextPrompt = `
-ลูกดวงคนนี้มาปรึกษาเรื่องความรัก สถานะหัวใจตอนนี้คือ: ${userData.statusLabel} (แม่หมอช่วยเน้นทำนายเรื่อง: ${userData.statusFocus})
-ลูกดวงเล่าหรือถามแม่หมอว่า: "${userData.question}"
+          // เปิดให้พิมพ์ช่องแชท
+          userInput.disabled = false;
+          sendBtn.disabled = false;
+          userInput.placeholder =
+            "พิมพ์เรื่องที่อยากรู้ (เช่น เขาคิดยังไง, เมื่อไหร่จะมีแฟน)...";
+          userInput.focus();
 
-คำสั่ง: แม่หมอช่วยอ่านพลังงานจากคำถามนี้ แล้วทำนายดวงตอบกลับลูกดวงให้ตรงประเด็น ให้คำปรึกษาที่เหมาะสม และตอนท้ายให้ถามกลับเพื่อเปิดโอกาสให้ลูกดวงชวนคุยต่อได้อย่างเป็นธรรมชาติ`;
+          let aiReply = `แม่หมอสัมผัสพลังงานของคุณได้แล้วค่ะ ตอนนี้คุณกำลังอยู่ในสถานะ <span class="text-[rgb(var(--c-accent))] font-bold theme-transition">${label}</span> สินะคะ 🔮<br><br>`;
 
-        try {
-            const res = await fetch('http://localhost:3000/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    systemPrompt,
-                    userContextPrompt
-                })
+          if (key === "single")
+            aiReply += `สำหรับคนโสด แม่หมอจะช่วยดูแนวโน้มการเจอเนื้อคู่ คนที่ใช่ หรือวิธีเปิดทางให้ความรักเข้ามาหาคุณนะคะ 🌸`;
+          else if (key === "talking")
+            aiReply += `สถานะคนคุยมันก็แอบอึดอัดใจเนอะ... แม่หมอเข้าใจค่ะ เดี๋ยวเรามาเปิดดวงดูความรู้สึกที่แท้จริงของเขาและความชัดเจนกันนะคะ ✨`;
+          else if (key === "couple")
+            aiReply += `ความรักเป็นเรื่องของการประคองคู่เนอะ แม่หมอจะช่วยดูเรื่องความมั่นคงและสิ่งที่ควรระวังเพื่อเสริมดวงคู่ให้แข็งแรงขึ้นค่ะ 🌊`;
+          else if (key === "broken")
+            aiReply += `กอดแน่นๆ เลยนะคะคนเก่ง... เดี๋ยวแม่หมอจะช่วยเช็กดวงให้ ว่าเขายังมีใจไหม โอกาสรีเทิร์นมีหรือเปล่า หรือจักรวาลอยากให้คุณเปิดรับคนใหม่ที่ดีกว่า 🌧️`;
+
+          aiReply += `<br><br><b>สูดหายใจลึกๆ ทำสมาธิสักนิดนะคะ... มีเรื่องอะไรที่อยู่ในใจ พิมพ์เล่าให้แม่หมอฟังได้เลย แม่หมอพร้อมรับฟังและหาคำตอบให้ค่ะ</b>`;
+
+          appendAIMessage(aiReply);
+        }, 1000);
+      }
+
+      //////////////////////////////////////////////////////////////
+      async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        appendUserMessage(text);
+        userInput.value = "";
+
+        if (chatState === "AWAITING_QUESTION" || chatState === "CHATTING") {
+          userData.question = text;
+          showTyping(true);
+          userInput.disabled = true;
+
+          // --- ดึงข้อมูล Profile ของผู้ใช้จาก Supabase ---
+          let profile = {};
+          const {
+            data: { session },
+          } = await supabaseClient.auth.getSession();
+          if (session && session.user) {
+            const { data: profileData } = await supabaseClient
+              .from("profiles")
+              .select("*")
+              .eq("id", session.user.id)
+              .single();
+            if (profileData) profile = profileData;
+          }
+
+          // --- 1. เตรียมข้อมูลของ "คนถาม" (ส่งครบชุด) ---
+          let profileContext = `ข้อมูลของลูกดวง:
+            - ชื่อจริง: ${profile.full_name || "ไม่ระบุ"}
+            - ชื่อเล่น: ${profile.nickname || "ไม่ระบุ"}
+            - เพศ: ${profile.gender || "ไม่ระบุ"}
+            - วันเกิด: ${profile.birth_date || "ไม่ระบุ"}
+            - เวลาเกิด: ${profile.birth_time || "ไม่ระบุ"}`;
+
+          // --- 2. เตรียมข้อมูลของ "คนคุย" (ถ้ามี และไม่ใช่คนโสด) ---
+          let partnerContext = "";
+          // ตรวจสอบว่าถ้าไม่ใช่คนโสด ให้เพิ่มข้อมูลคนคุย/คู่
+          if (userData.status !== "SINGLE") {
+            partnerContext = `\n\nข้อมูลของอีกฝ่าย:
+            - ชื่อ/ชื่อเล่น: ${userData.partnerName || "ไม่ระบุ"}
+            - วันเกิด: ${userData.partnerBirthDate || "ไม่ระบุ"}`;
+          }
+
+          const systemPrompt = `คุณคือ "แม่หมอความรัก" ผู้เชี่ยวชาญด้านโหราศาสตร์และจิตวิทยาความสัมพันธ์ คุณจะวิเคราะห์ดวงจากชื่อ วันเดือนปีเกิด และเวลาเกิด เพื่อให้คำทำนายที่เฉพาะเจาะจงและแม่นยำที่สุด`;
+
+          const userContextPrompt = `
+            ${profileContext}
+            ${partnerContext}
+
+            สถานะปัจจุบัน: ${userData.statusLabel}
+            สิ่งที่ต้องการคำปรึกษา: ${userData.statusFocus}
+            ลูกดวงถามว่า: "${userData.question}"
+
+            คำสั่งสำหรับแม่หมอ:
+            1. นำชื่อและวันเดือนปีเกิด/เวลาเกิดของทั้งคู่มาวิเคราะห์พื้นดวงและความสมพงษ์
+            2. ทำนายแนวโน้มของเหตุการณ์ที่ลูกดวงถาม โดยใช้ภาษาที่อบอุ่นเหมือนพี่สอนน้องหรือเพื่อนคู่คิด
+            3. สรุปคำแนะนำที่ลูกดวงควรทำ
+            4. ตอนท้ายให้ถามคำถามกลับ 1 ประโยคเพื่อชวนคุยต่อ
+            5. ปีนี้คือ ปี 2026 
+            รูปแบบการตอบกลับ: ตอบแบบสรุปใจความสำคัญ 3-5 ประโยคก็พอ แต่ละหัวข้อ ไม่ต้องเกริ่นนำตัว ให้เริ่มคำทำนายเลย`;
+
+          try {
+            const res = await fetch("http://localhost:3000/api/chat", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                systemPrompt,
+                userContextPrompt,
+              }),
             });
 
             const data = await res.json();
@@ -461,100 +651,112 @@
             showTyping(false);
             userInput.disabled = false;
             userInput.focus();
-            chatState = 'CHATTING';
+            chatState = "CHATTING";
 
-            // ✅ แก้ตรงนี้
-            appendAIMessage(data.text.replace(/\n/g, '<br>'));
-
-        } catch (err) {
+            appendAIMessage(data.text.replace(/\n/g, "<br>"));
+          } catch (err) {
             showTyping(false);
             userInput.disabled = false;
-
-            appendAIMessage('แม่หมอเชื่อมต่อพลังงานไม่ได้ตอนนี้ ลองใหม่อีกครั้งนะคะ ✨');
+            appendAIMessage(
+              "แม่หมอเชื่อมต่อพลังงานไม่ได้ตอนนี้ ลองใหม่อีกครั้งนะคะ ✨",
+            );
             console.error(err);
+          }
         }
-    }
-}
-        //////////////////////////////////////////////////////////////
+      }
+      //////////////////////////////////////////////////////////////
 
-        // --- ระบบ Popup Profile ---
-        async function loadProfileForPopup() {
-            const checkClient = setInterval(async () => {
-                if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-                    clearInterval(checkClient);
-                    try {
-                        const { data: { session } } = await supabaseClient.auth.getSession();
-                        if (session && session.user) {
+      // --- ระบบ Popup Profile ---
+      async function loadProfileForPopup() {
+        const checkClient = setInterval(async () => {
+          if (typeof supabaseClient !== "undefined" && supabaseClient) {
+            clearInterval(checkClient);
+            try {
+              const {
+                data: { session },
+              } = await supabaseClient.auth.getSession();
+              if (session && session.user) {
+                // === อัปเดตข้อมูลใน Popup ===
+                const userEmail = session.user.email;
+                if (userEmail) {
+                  const elEmail = document.getElementById("popup-email");
+                  if (elEmail) elEmail.textContent = userEmail;
 
-                            // === อัปเดตข้อมูลใน Popup ===
-                            const userEmail = session.user.email;
-                            if (userEmail) {
-                                const elEmail = document.getElementById('popup-email');
-                                if (elEmail) elEmail.textContent = userEmail;
-
-                                const domain = userEmail.split('@')[1];
-                                const elManaged = document.getElementById('popup-managed');
-                                if (domain && elManaged) {
-                                    elManaged.textContent = 'Managed by ' + domain;
-                                }
-                            }
-
-                            const { data: profile } = await supabaseClient
-                                .from('profiles')
-                                .select('full_name')
-                                .eq('id', session.user.id)
-                                .single();
-
-                            // กำหนดชื่อที่แสดงและตัวอักษรย่อ
-                            const displayName = (profile && profile.full_name) ? profile.full_name : (userEmail ? userEmail.split('@')[0] : 'USER');
-                            const elGreeting = document.getElementById('popup-greeting');
-                            if (elGreeting) elGreeting.textContent = 'Hi, ' + displayName.toUpperCase() + '!';
-
-                            const firstLetter = displayName.charAt(0).toUpperCase();
-                            const elPopupLetter = document.getElementById('popup-avatar-letter');
-                            if (elPopupLetter) elPopupLetter.textContent = firstLetter;
-
-                            const avatarBtn = document.getElementById('avatar-btn');
-                            if (avatarBtn) {
-                                avatarBtn.innerHTML = `<span class="text-[rgb(var(--c-accent))] font-bold text-lg theme-transition">${firstLetter}</span>`;
-                            }
-                        }
-                    } catch (err) {
-                        console.error("Error loading profile for popup:", err);
-                    }
-                }
-            }, 100);
-        }
-
-        // เริ่มดึงข้อมูลโปรไฟล์
-        loadProfileForPopup();
-
-        // การเปิด/ปิด Popup
-        document.addEventListener('DOMContentLoaded', () => {
-            const avatarBtn = document.getElementById('avatar-btn');
-            const accountPopup = document.getElementById('account-popup');
-            const closePopup = document.getElementById('close-popup');
-
-            if (avatarBtn && accountPopup) {
-                avatarBtn.addEventListener('click', () => {
-                    accountPopup.style.display = accountPopup.style.display === 'none' ? 'block' : 'none';
-                });
-
-                if (closePopup) {
-                    closePopup.addEventListener('click', () => {
-                        accountPopup.style.display = 'none';
-                    });
+                  const domain = userEmail.split("@")[1];
+                  const elManaged = document.getElementById("popup-managed");
+                  if (domain && elManaged) {
+                    elManaged.textContent = "Managed by " + domain;
+                  }
                 }
 
-                // ซ่อนเมื่อคลิกพื้นที่อื่น
-                document.addEventListener('click', (e) => {
-                    if (!avatarBtn.contains(e.target) && !accountPopup.contains(e.target)) {
-                        accountPopup.style.display = 'none';
-                    }
-                });
+                const { data: profile } = await supabaseClient
+                  .from("profiles")
+                  .select("full_name")
+                  .eq("id", session.user.id)
+                  .single();
+
+                // กำหนดชื่อที่แสดงและตัวอักษรย่อ
+                const displayName =
+                  profile && profile.full_name
+                    ? profile.full_name
+                    : userEmail
+                      ? userEmail.split("@")[0]
+                      : "USER";
+                const elGreeting = document.getElementById("popup-greeting");
+                if (elGreeting)
+                  elGreeting.textContent =
+                    "Hi, " + displayName.toUpperCase() + "!";
+
+                const firstLetter = displayName.charAt(0).toUpperCase();
+                const elPopupLetter = document.getElementById(
+                  "popup-avatar-letter",
+                );
+                if (elPopupLetter) elPopupLetter.textContent = firstLetter;
+
+                const avatarBtn = document.getElementById("avatar-btn");
+                if (avatarBtn) {
+                  avatarBtn.innerHTML = `<span class="text-[rgb(var(--c-accent))] font-bold text-lg theme-transition">${firstLetter}</span>`;
+                }
+              }
+            } catch (err) {
+              console.error("Error loading profile for popup:", err);
             }
-        });
-    </script>
-</body>
+          }
+        }, 100);
+      }
 
+      // เริ่มดึงข้อมูลโปรไฟล์
+      loadProfileForPopup();
+
+      // การเปิด/ปิด Popup
+      document.addEventListener("DOMContentLoaded", () => {
+        const avatarBtn = document.getElementById("avatar-btn");
+        const accountPopup = document.getElementById("account-popup");
+        const closePopup = document.getElementById("close-popup");
+
+        if (avatarBtn && accountPopup) {
+          avatarBtn.addEventListener("click", () => {
+            accountPopup.style.display =
+              accountPopup.style.display === "none" ? "block" : "none";
+          });
+
+          if (closePopup) {
+            closePopup.addEventListener("click", () => {
+              accountPopup.style.display = "none";
+            });
+          }
+
+          // ซ่อนเมื่อคลิกพื้นที่อื่น
+          document.addEventListener("click", (e) => {
+            if (
+              !avatarBtn.contains(e.target) &&
+              !accountPopup.contains(e.target)
+            ) {
+              accountPopup.style.display = "none";
+            }
+          });
+        }
+      });
+    </script>
+  </body>
 </html>
