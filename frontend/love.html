@@ -275,12 +275,13 @@
         class="container mx-auto px-4 flex justify-between items-center max-w-4xl"
       >
         <div class="flex items-center gap-4">
-          <a
-            href="main.html"
+          <button
+            id="back-btn"
+            onclick="handleBackNavigation()"
             class="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
           >
             <i data-lucide="arrow-left" class="w-5 h-5"></i>
-          </a>
+          </button>
           <div class="flex items-center gap-3">
             <div
               class="w-10 h-10 rounded-full bg-[rgb(var(--c-dark)/0.5)] border border-[rgb(var(--c-primary)/0.3)] flex items-center justify-center shadow-inner theme-transition"
@@ -590,6 +591,11 @@
         fanBirthdate: null,
         question: "",
       };
+      let currentUser = null;
+      let currentProfile = {};
+      let currentLoveSessionId = null;
+      let hasShownLoveSetupWarning = false;
+      const loveHistoryCache = new Map();
 
       const chatMessages = document.getElementById("chat-messages");
       const userInput = document.getElementById("user-input");
@@ -671,11 +677,291 @@
             .eq("id", session.user.id)
             .single();
 
-          return profileData || {};
+          currentUser = session.user;
+          currentProfile = profileData || {};
+          return currentProfile;
         } catch (err) {
           console.error(err);
           return {};
         }
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function isMissingLoveTableError(error) {
+        const message = `${error?.code || ""} ${error?.message || ""} ${error?.details || ""}`;
+        return message.includes("42P01") || message.includes("love_sessions") || message.includes("love_messages") || message.includes("love_readings");
+      }
+
+      function showLoveSetupWarning(error) {
+        if (hasShownLoveSetupWarning || !isMissingLoveTableError(error)) return;
+        hasShownLoveSetupWarning = true;
+        appendAIMessage(
+          "ระบบประวัติความรักยังไม่พร้อมใช้งาน เพราะยังไม่ได้สร้างตาราง Love ใน Supabase ค่ะ ตอนนี้ยังดูดวงได้ตามปกติ แต่ประวัติจะยังไม่ถูกบันทึกจนกว่าจะรันไฟล์ `supabase/migrations/202605070002_create_love_tables.sql` ใน Supabase SQL Editor",
+        );
+      }
+
+      function buildLoveSessionTitle(label, fanBirthdate) {
+        if (fanBirthdate) return `${label} · อีกฝ่าย ${fanBirthdate}`;
+        return label;
+      }
+
+      async function createLoveSession() {
+        const profile = await getUserProfile();
+        if (!currentUser?.id) return null;
+
+        const payload = {
+          user_id: currentUser.id,
+          status_key: userData.statusKey,
+          status_label: userData.statusLabel,
+          status_focus: userData.statusFocus,
+          fan_birthdate: userData.fanBirthdate,
+          title: buildLoveSessionTitle(userData.statusLabel, userData.fanBirthdate),
+        };
+
+        const { data, error } = await supabaseClient
+          .from("love_sessions")
+          .insert(payload)
+          .select("id")
+          .single();
+
+        if (error) {
+          showLoveSetupWarning(error);
+          throw error;
+        }
+
+        currentProfile = profile;
+        currentLoveSessionId = data.id;
+        return data.id;
+      }
+
+      async function saveLoveMessage(role, content) {
+        if (!currentLoveSessionId || !currentUser?.id || !content) return;
+
+        const { error } = await supabaseClient
+          .from("love_messages")
+          .insert({
+            session_id: currentLoveSessionId,
+            user_id: currentUser.id,
+            role,
+            content,
+          });
+
+        if (error) {
+          showLoveSetupWarning(error);
+          console.error("Unable to save love message:", error);
+        }
+      }
+
+      async function saveLoveReading(category, prediction) {
+        if (!currentLoveSessionId || !currentUser?.id || !prediction) return;
+
+        const { error } = await supabaseClient
+          .from("love_readings")
+          .insert({
+            session_id: currentLoveSessionId,
+            user_id: currentUser.id,
+            category,
+            prediction,
+          });
+
+        if (error) {
+          showLoveSetupWarning(error);
+          console.error("Unable to save love reading:", error);
+        }
+      }
+
+      async function touchLoveSession() {
+        if (!currentLoveSessionId) return;
+        const { error } = await supabaseClient
+          .from("love_sessions")
+          .update({ updated_at: new Date().toISOString() })
+          .eq("id", currentLoveSessionId);
+
+        if (error) {
+          showLoveSetupWarning(error);
+          console.error("Unable to update love session:", error);
+        }
+      }
+
+      function appendLoveHistoryMessage(sessions) {
+        if (!sessions.length) return;
+
+        const rows = sessions.map((session) => {
+          loveHistoryCache.set(session.id, session);
+          const updatedAt = new Date(session.updated_at).toLocaleDateString("th-TH", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          });
+          return `
+            <div id="love-history-session-${session.id}" class="flex items-stretch gap-2">
+              <button onclick="loadLoveSession('${session.id}')"
+                class="flex-1 text-left p-3 rounded-xl border border-[rgb(var(--c-primary)/0.22)] bg-[rgb(var(--c-dark)/0.28)] hover:bg-[rgb(var(--c-dark)/0.42)] transition-colors min-w-0 theme-transition">
+                <div class="font-semibold text-[rgb(var(--c-light))] truncate theme-transition">${escapeHtml(session.title)}</div>
+                <div class="text-xs text-slate-400 mt-1">${updatedAt}</div>
+              </button>
+              <button onclick="deleteLoveSession(event, '${session.id}')"
+                class="w-11 rounded-xl border border-red-500/25 bg-red-950/30 text-red-300 hover:bg-red-900/40 hover:text-red-100 transition-colors flex items-center justify-center"
+                title="ลบประวัตินี้">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>`;
+        }).join("");
+
+        chatMessages.insertAdjacentHTML("beforeend", `
+          <div id="love-history-panel" class="flex gap-3 msg-animate w-full">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[rgb(var(--c-primary))] to-[rgb(var(--c-dark))] border border-[rgb(var(--c-accent))] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgb(var(--c-accent)/0.3)] mt-1 theme-transition">
+              <i data-lucide="history" class="w-5 h-5 text-white"></i>
+            </div>
+            <div class="flex flex-col gap-2 max-w-[85%] md:max-w-[75%] w-full">
+              <span class="text-xs text-[rgb(var(--c-light))] ml-1 theme-transition">ประวัติความรัก</span>
+              <div class="bg-[#12050a]/90 p-4 rounded-2xl rounded-tl-sm border border-[rgb(var(--c-primary)/0.3)] text-slate-200 text-sm shadow-lg theme-transition">
+                <div class="font-semibold text-[rgb(var(--c-light))] mb-3 theme-transition">กลับไปคุยต่อจากประวัติเดิมได้</div>
+                <div class="space-y-2">${rows}</div>
+              </div>
+            </div>
+          </div>`);
+        lucide.createIcons();
+        scrollToBottom();
+      }
+
+      async function loadLoveHistory() {
+        const profile = await getUserProfile();
+        if (!currentUser?.id) return;
+
+        const { data, error } = await supabaseClient
+          .from("love_sessions")
+          .select("id, status_key, status_label, status_focus, fan_birthdate, title, updated_at")
+          .eq("user_id", currentUser.id)
+          .order("updated_at", { ascending: false })
+          .limit(5);
+
+        if (error) {
+          showLoveSetupWarning(error);
+          console.error("Unable to load love history:", error);
+          return;
+        }
+
+        currentProfile = profile;
+        appendLoveHistoryMessage(data || []);
+      }
+
+      async function loadLoveSession(sessionId) {
+        const session = loveHistoryCache.get(sessionId);
+        if (!session) return;
+
+        userData.statusKey = session.status_key;
+        userData.statusLabel = session.status_label;
+        userData.statusFocus = session.status_focus;
+        userData.fanBirthdate = session.fan_birthdate || null;
+        currentLoveSessionId = session.id;
+        chatState = "CHATTING";
+
+        document.body.className = `bg-[#050305] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)] theme-${session.status_key}`;
+        document.getElementById("status-selection").style.display = "none";
+        document.getElementById("love-history-panel")?.remove();
+        userInput.disabled = false;
+        sendBtn.disabled = false;
+        userInput.placeholder = "ถามต่อจากประวัติเดิมได้เลย...";
+
+        appendAIMessage(`โหลดประวัติ **${escapeHtml(session.title)}** แล้ว`);
+
+        const { data, error } = await supabaseClient
+          .from("love_messages")
+          .select("role, content, created_at")
+          .eq("session_id", sessionId)
+          .order("created_at", { ascending: true });
+
+        if (error) {
+          showLoveSetupWarning(error);
+          console.error("Unable to load love messages:", error);
+          return;
+        }
+
+        (data || []).forEach((message) => {
+          if (message.role === "user") appendUserMessage(escapeHtml(message.content));
+          else appendAIMessage(message.content);
+        });
+      }
+
+      async function deleteLoveSession(event, sessionId) {
+        event?.stopPropagation();
+
+        const session = loveHistoryCache.get(sessionId);
+        const label = session?.title || "ประวัตินี้";
+        const confirmed = window.confirm(`ลบ "${label}" และข้อความทั้งหมดในประวัตินี้ใช่ไหม?`);
+        if (!confirmed) return;
+
+        const { error } = await supabaseClient
+          .from("love_sessions")
+          .delete()
+          .eq("id", sessionId);
+
+        if (error) {
+          showLoveSetupWarning(error);
+          appendAIMessage("ลบประวัติไม่สำเร็จ ลองใหม่อีกครั้งนะคะ");
+          console.error("Unable to delete love session:", error);
+          return;
+        }
+
+        loveHistoryCache.delete(sessionId);
+        document.getElementById(`love-history-session-${sessionId}`)?.remove();
+
+        if (currentLoveSessionId === sessionId) {
+          currentLoveSessionId = null;
+          chatState = "AWAITING_STATUS";
+        }
+
+        appendAIMessage(`ลบประวัติ **${escapeHtml(label)}** แล้ว`);
+      }
+
+      function resetToStatusSelection() {
+        chatState = "AWAITING_STATUS";
+        userData = {
+          statusKey: "",
+          statusLabel: "",
+          statusFocus: "",
+          fanBirthdate: null,
+          question: "",
+        };
+        currentLoveSessionId = null;
+        showTyping(false);
+
+        // รีเซ็ต UI: ลบข้อความเก่า ยกเว้นข้อความต้อนรับ
+        const firstMessage = chatMessages.firstElementChild;
+        chatMessages.innerHTML = "";
+        if (firstMessage) chatMessages.appendChild(firstMessage);
+
+        const statusSelection = document.getElementById("status-selection");
+        statusSelection.style.display = "flex";
+        statusSelection.classList.remove("msg-animate");
+        void statusSelection.offsetWidth; // Force reflow
+        statusSelection.classList.add("msg-animate");
+
+        document.body.className = "bg-[#050305] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)] theme-single";
+        userInput.value = "";
+        userInput.disabled = true;
+        sendBtn.disabled = true;
+        userInput.placeholder = "กรุณาเลือกสถานะด้านบนก่อนนะคะ...";
+        
+        loadLoveHistory();
+        scrollToBottom();
+      }
+
+      function handleBackNavigation() {
+        if (chatState === "AWAITING_STATUS") {
+          window.location.href = "main.html";
+          return;
+        }
+        resetToStatusSelection();
       }
 
       async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 45000) {
@@ -788,13 +1074,13 @@
         proceedAfterStatus(key, label);
       }
 
-      function skipFanBirthday(key, label) {
+      async function skipFanBirthday(key, label) {
         const promptEl = document.getElementById("fan-birthday-prompt");
         if (promptEl) promptEl.remove();
         userData.fanBirthdate = null;
         const personLabel = key === "talking" ? "คนที่คุยด้วย" : "แฟน";
         appendUserMessage(`ไม่ระบุวันเกิด${personLabel}`);
-        proceedAfterStatus(key, label);
+        await proceedAfterStatus(key, label);
       }
 
       // ขั้นตอนต่อจากสถานะ (เดิมอยู่ใน selectStatus)
@@ -805,6 +1091,12 @@
 
         try {
           const profile = await getUserProfile();
+          await createLoveSession();
+          await saveLoveMessage("user", `สถานะตอนนี้: ${label}`);
+          if (userData.fanBirthdate) {
+            await saveLoveMessage("user", `วันเกิดอีกฝ่าย: ${userData.fanBirthdate}`);
+          }
+
           const { res, data } = await fetchJsonWithTimeout("/api/v1/horoscope", {
             method: "POST",
             headers: {
@@ -812,6 +1104,8 @@
             },
             body: JSON.stringify({
               name: profile.nickname || profile.full_name || "ลูกดวง",
+              full_name: profile.full_name || "",
+              nickname: profile.nickname || "",
               birthdate: profile.birth_date || "2000-01-01",
               birthtime: profile.birth_time || "12:00",
               fan_birthdate: userData.fanBirthdate,
@@ -833,6 +1127,9 @@
             "พิมพ์เรื่องที่อยากรู้ (เช่น เขาคิดยังไง, เมื่อไหร่จะมีแฟน)...";
           userInput.focus();
           appendAIMessage(data.prediction);
+          await saveLoveMessage("assistant", data.prediction);
+          await saveLoveReading("LOVE_OVERVIEW", data.prediction);
+          await touchLoveSession();
         } catch (err) {
           showTyping(false);
           chatState = "AWAITING_QUESTION";
@@ -851,7 +1148,7 @@
       // ─────────────────────────────────────────────────────────────
       // 1. ผู้ใช้กดเลือกสถานะ
       // ─────────────────────────────────────────────────────────────
-      function selectStatus(key, label, focus) {
+      async function selectStatus(key, label, focus) {
         if (chatState !== "AWAITING_STATUS") return;
 
         userData.statusKey = key;
@@ -865,6 +1162,7 @@
         document.getElementById("status-selection").style.display = "none";
 
         appendUserMessage(`สถานะตอนนี้: <b>${label}</b>`);
+        document.getElementById("love-history-panel")?.remove();
 
         // ─── ถ้าเป็น talking หรือ couple → ถามวันเกิดแฟน/คนคุยก่อน ───
         if (key === "talking" || key === "couple") {
@@ -874,7 +1172,7 @@
           }, 600);
         } else {
           // single / broken → ข้ามขั้นตอนวันเกิดแฟน ไปเลย
-          proceedAfterStatus(key, label);
+          await proceedAfterStatus(key, label);
         }
       }
 
@@ -887,11 +1185,17 @@
         userInput.value = "";
 
         if (chatState === "AWAITING_QUESTION" || chatState === "CHATTING") {
+          if (!currentLoveSessionId) {
+            appendAIMessage("เลือกสถานะหัวใจก่อนนะคะ แล้วแม่หมอจะเปิดดวงภาพรวมให้ก่อนค่อยคุยต่อค่ะ");
+            return;
+          }
+
           userData.question = text;
           showTyping(true);
           userInput.disabled = true;
 
           const profile = await getUserProfile();
+          await saveLoveMessage("user", text);
 
           try {
             // เรียกผ่าน Node gateway เพื่อให้ frontend ไม่ผูกกับ port ของ Python โดยตรง
@@ -902,6 +1206,8 @@
               },
               body: JSON.stringify({
                 name: profile.nickname || profile.full_name || "ลูกดวง",
+                full_name: profile.full_name || "",
+                nickname: profile.nickname || "",
                 birthdate: profile.birth_date || "2000-01-01",
                 birthtime: profile.birth_time || "12:00",
                 fan_birthdate: userData.fanBirthdate,
@@ -922,6 +1228,9 @@
 
             // ใช้ฟิลด์ prediction จาก FastAPI
             appendAIMessage(data.prediction);
+            await saveLoveMessage("assistant", data.prediction);
+            await saveLoveReading("LOVE", data.prediction);
+            await touchLoveSession();
           } catch (err) {
             showTyping(false);
             userInput.disabled = false;
@@ -995,6 +1304,12 @@
 
       // เริ่มดึงข้อมูลโปรไฟล์
       loadProfileForPopup();
+      const loveHistoryReady = setInterval(() => {
+        if (typeof supabaseClient !== "undefined" && supabaseClient) {
+          clearInterval(loveHistoryReady);
+          loadLoveHistory();
+        }
+      }, 100);
 
       // การเปิด/ปิด Popup
       document.addEventListener("DOMContentLoaded", () => {

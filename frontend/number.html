@@ -114,9 +114,9 @@
     <nav class="relative z-20 w-full bg-[#020814]/80 backdrop-blur-md border-b border-blue-500/20 py-3 shadow-[0_4px_30px_rgba(0,0,0,0.5)] shrink-0">
       <div class="container mx-auto px-4 flex justify-between items-center max-w-4xl">
         <div class="flex items-center gap-4">
-          <a href="main.html" class="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+          <button id="back-btn" type="button" onclick="handleBackNavigation()" class="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
             <i data-lucide="arrow-left" class="w-5 h-5"></i>
-          </a>
+          </button>
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-blue-950/60 border border-blue-500/30 flex items-center justify-center shadow-inner">
               <i data-lucide="hash" class="w-5 h-5 text-blue-400"></i>
@@ -168,7 +168,7 @@
       <div id="chat-messages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scroll-smooth">
 
         <!-- Welcome Message -->
-        <div class="flex gap-3 msg-animate">
+        <div class="flex gap-3 msg-animate" data-persistent="true">
           <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-900 border border-blue-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(96,165,250,0.3)] mt-1">
             <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
           </div>
@@ -286,6 +286,12 @@
 
       let chatState = "AWAITING_CATEGORY";
       let userData = { categoryKey: "", categoryLabel: "", categoryFocus: "", question: "" };
+      let currentUser = null;
+      let currentProfile = {};
+      let currentSessionId = null;
+      let currentSessionNumberInput = "";
+      let hasShownHistorySetupWarning = false;
+      const historySessionCache = new Map();
 
       const chatMessages = document.getElementById("chat-messages");
       const userInput = document.getElementById("user-input");
@@ -301,6 +307,42 @@
       function showTyping(show) {
         if (show) { typingIndicator.classList.remove("hidden"); scrollToBottom(); }
         else { typingIndicator.classList.add("hidden"); }
+      }
+
+      function resetToCategorySelection() {
+        chatState = "AWAITING_CATEGORY";
+        userData = { categoryKey: "", categoryLabel: "", categoryFocus: "", question: "" };
+        currentSessionId = null;
+        currentSessionNumberInput = "";
+        historySessionCache.clear();
+        showTyping(false);
+
+        Array.from(chatMessages.children).forEach((child) => {
+          if (child.id !== "category-selection" && child.dataset.persistent !== "true") {
+            child.remove();
+          }
+        });
+
+        const categorySelection = document.getElementById("category-selection");
+        categorySelection.style.display = "flex";
+        categorySelection.classList.remove("msg-animate");
+        void categorySelection.offsetWidth;
+        categorySelection.classList.add("msg-animate");
+
+        userInput.value = "";
+        userInput.disabled = true;
+        sendBtn.disabled = true;
+        userInput.placeholder = "กรุณาเลือกประเภทเลขด้านบนก่อนนะครับ...";
+        scrollToBottom();
+      }
+
+      function handleBackNavigation() {
+        if (chatState === "AWAITING_CATEGORY") {
+          window.location.href = "main.html";
+          return;
+        }
+
+        resetToCategorySelection();
       }
 
       function appendUserMessage(text) {
@@ -336,11 +378,268 @@
         scrollToBottom();
       }
 
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      async function getUserContext() {
+        try {
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (!session?.user) return { user: null, profile: {} };
+
+          const { data: profileData } = await supabaseClient
+            .from("profiles")
+            .select("*")
+            .eq("id", session.user.id)
+            .single();
+
+          currentUser = session.user;
+          currentProfile = profileData || {};
+          return { user: currentUser, profile: currentProfile };
+        } catch (err) {
+          console.error("Unable to load user context:", err);
+          return { user: null, profile: {} };
+        }
+      }
+
+      function isMissingNumerologyTableError(error) {
+        const message = `${error?.code || ""} ${error?.message || ""} ${error?.details || ""}`;
+        return message.includes("42P01") || message.includes("numerology_sessions") || message.includes("numerology_messages") || message.includes("numerology_readings");
+      }
+
+      function showHistorySetupWarning(error) {
+        if (hasShownHistorySetupWarning || !isMissingNumerologyTableError(error)) return;
+        hasShownHistorySetupWarning = true;
+        appendAIMessage(
+          "ระบบประวัติแชทยังไม่พร้อมใช้งาน เพราะยังไม่ได้สร้างตาราง Numerology ใน Supabase ครับ/ค่ะ ตอนนี้ยังวิเคราะห์เลขได้ตามปกติ แต่ประวัติจะยังไม่ถูกบันทึกจนกว่าจะรันไฟล์ `supabase/migrations/202605070001_create_numerology_tables.sql` ใน Supabase SQL Editor"
+        );
+      }
+
+      function buildSessionTitle(categoryLabel, numberInput) {
+        const compact = String(numberInput || "").replace(/\s+/g, " ").trim();
+        return `${categoryLabel}: ${compact.slice(0, 32)}${compact.length > 32 ? "..." : ""}`;
+      }
+
+      function hasDigit(value) {
+        return /\d/.test(String(value || ""));
+      }
+
+      async function createNumerologySession(numberInput) {
+        const { user } = await getUserContext();
+        if (!user) return null;
+
+        const payload = {
+          user_id: user.id,
+          category: userData.categoryKey,
+          category_label: userData.categoryLabel,
+          number_input: numberInput,
+          title: buildSessionTitle(userData.categoryLabel, numberInput),
+        };
+
+        const { data, error } = await supabaseClient
+          .from("numerology_sessions")
+          .insert(payload)
+          .select("id, number_input")
+          .single();
+
+        if (error) {
+          showHistorySetupWarning(error);
+          throw error;
+        }
+        currentSessionId = data.id;
+        currentSessionNumberInput = data.number_input;
+        return data.id;
+      }
+
+      async function saveNumerologyMessage(role, content) {
+        if (!currentSessionId || !currentUser?.id || !content) return;
+
+        const { error } = await supabaseClient
+          .from("numerology_messages")
+          .insert({
+            session_id: currentSessionId,
+            user_id: currentUser.id,
+            role,
+            content,
+          });
+
+        if (error) {
+          showHistorySetupWarning(error);
+          console.error("Unable to save numerology message:", error);
+        }
+      }
+
+      async function saveNumerologyReading(data) {
+        if (!currentSessionId || !currentUser?.id || !data?.prediction) return;
+
+        const { error } = await supabaseClient
+          .from("numerology_readings")
+          .insert({
+            session_id: currentSessionId,
+            user_id: currentUser.id,
+            root_number: data.root_number ?? null,
+            calculation_steps: data.calculation_steps ?? null,
+            prediction: data.prediction,
+          });
+
+        if (error) {
+          showHistorySetupWarning(error);
+          console.error("Unable to save numerology reading:", error);
+        }
+      }
+
+      async function touchNumerologySession() {
+        if (!currentSessionId) return;
+        const { error } = await supabaseClient
+          .from("numerology_sessions")
+          .update({ updated_at: new Date().toISOString() })
+          .eq("id", currentSessionId);
+
+        if (error) {
+          showHistorySetupWarning(error);
+          console.error("Unable to update numerology session:", error);
+        }
+      }
+
+      function appendHistoryMessage(sessions) {
+        if (!sessions.length) return;
+
+        const rows = sessions.map((session) => {
+          historySessionCache.set(session.id, session);
+          const updatedAt = new Date(session.updated_at).toLocaleDateString("th-TH", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          });
+          return `
+            <div id="history-session-${session.id}" class="flex items-stretch gap-2">
+              <button onclick="loadNumerologySession('${session.id}')"
+                class="flex-1 text-left p-3 rounded-xl border border-blue-500/20 bg-blue-950/30 hover:bg-blue-900/40 transition-colors min-w-0">
+                <div class="font-semibold text-blue-100 truncate">${escapeHtml(session.title)}</div>
+                <div class="text-xs text-slate-400 mt-1">${updatedAt}</div>
+              </button>
+              <button onclick="deleteNumerologySession(event, '${session.id}')"
+                class="w-11 rounded-xl border border-red-500/25 bg-red-950/30 text-red-300 hover:bg-red-900/40 hover:text-red-100 transition-colors flex items-center justify-center"
+                title="ลบประวัตินี้">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>`;
+        }).join("");
+
+        chatMessages.insertAdjacentHTML("beforeend", `
+          <div class="flex gap-3 msg-animate w-full">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-900 border border-blue-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(96,165,250,0.3)] mt-1">
+              <i data-lucide="history" class="w-5 h-5 text-white"></i>
+            </div>
+            <div class="flex flex-col gap-2 max-w-[85%] md:max-w-[75%] w-full">
+              <span class="text-xs text-blue-300 ml-1">ประวัติเดิม</span>
+              <div class="bg-[#040d1f]/90 p-4 rounded-2xl rounded-tl-sm border border-blue-500/30 text-slate-200 text-sm shadow-lg">
+                <div class="font-semibold text-blue-100 mb-3">เคยดูหมวดนี้แล้ว จะดูต่อจากรายการเก่าก็ได้</div>
+                <div class="space-y-2">${rows}</div>
+              </div>
+            </div>
+          </div>`);
+        lucide.createIcons();
+        scrollToBottom();
+      }
+
+      async function loadCategoryHistory(categoryKey) {
+        const { user } = await getUserContext();
+        if (!user) return;
+
+        const { data, error } = await supabaseClient
+          .from("numerology_sessions")
+          .select("id, category, category_label, number_input, title, updated_at")
+          .eq("user_id", user.id)
+          .eq("category", categoryKey)
+          .order("updated_at", { ascending: false })
+          .limit(5);
+
+        if (error) {
+          showHistorySetupWarning(error);
+          console.error("Unable to load numerology history:", error);
+          return;
+        }
+
+        appendHistoryMessage(data || []);
+      }
+
+      async function loadNumerologySession(sessionId) {
+        const session = historySessionCache.get(sessionId);
+        if (!session) return;
+
+        currentSessionId = session.id;
+        currentSessionNumberInput = session.number_input;
+        chatState = "CHATTING";
+        userInput.disabled = false;
+        sendBtn.disabled = false;
+        userInput.placeholder = "ถามต่อจากประวัติเดิมได้เลย...";
+
+        appendAIMessage(`โหลดประวัติ **${escapeHtml(session.title)}** แล้ว`);
+
+        const { data, error } = await supabaseClient
+          .from("numerology_messages")
+          .select("role, content, created_at")
+          .eq("session_id", sessionId)
+          .order("created_at", { ascending: true });
+
+        if (error) {
+          showHistorySetupWarning(error);
+          console.error("Unable to load numerology messages:", error);
+          return;
+        }
+
+        (data || []).forEach((message) => {
+          if (message.role === "user") appendUserMessage(escapeHtml(message.content));
+          else appendAIMessage(message.content);
+        });
+      }
+
+      async function deleteNumerologySession(event, sessionId) {
+        event?.stopPropagation();
+
+        const session = historySessionCache.get(sessionId);
+        const label = session?.title || "ประวัตินี้";
+        const confirmed = window.confirm(`ลบ "${label}" และข้อความทั้งหมดในประวัตินี้ใช่ไหม?`);
+        if (!confirmed) return;
+
+        const { error } = await supabaseClient
+          .from("numerology_sessions")
+          .delete()
+          .eq("id", sessionId);
+
+        if (error) {
+          showHistorySetupWarning(error);
+          appendAIMessage("ลบประวัติไม่สำเร็จ กรุณาลองใหม่อีกครั้งครับ/ค่ะ");
+          console.error("Unable to delete numerology session:", error);
+          return;
+        }
+
+        historySessionCache.delete(sessionId);
+        document.getElementById(`history-session-${sessionId}`)?.remove();
+
+        if (currentSessionId === sessionId) {
+          currentSessionId = null;
+          currentSessionNumberInput = "";
+          chatState = "AWAITING_QUESTION";
+        }
+
+        appendAIMessage(`ลบประวัติ **${escapeHtml(label)}** แล้ว`);
+      }
+
       function selectCategory(key, label, focus) {
         if (chatState !== "AWAITING_CATEGORY") return;
         userData.categoryKey = key;
         userData.categoryLabel = label;
         userData.categoryFocus = focus;
+        currentSessionId = null;
+        currentSessionNumberInput = "";
+        historySessionCache.clear();
 
         document.getElementById("category-selection").style.display = "none";
         appendUserMessage(`ต้องการวิเคราะห์: <b>${label}</b>`);
@@ -370,6 +669,7 @@
             general: `รับทราบแล้วครับ/ค่ะ ⭐ ไม่ว่าจะเป็นเลขวันเกิด เลขที่ชื่นชอบ หรือเลขที่สงสัย เลขศาสตร์สามารถอธิบายพลังงานของตัวเลขนั้นๆ ได้<br><br><b>กรุณาพิมพ์ตัวเลขที่ต้องการวิเคราะห์ได้เลยครับ/ค่ะ พร้อมบอกด้วยว่าเป็นเลขอะไร</b>`
           };
           appendAIMessage(intros[key] || `เลือกหมวด <b>${label}</b> แล้วนะครับ/ค่ะ กรุณาพิมพ์ตัวเลขที่ต้องการวิเคราะห์ได้เลย`);
+          loadCategoryHistory(key);
         }, 1000);
       }
 
@@ -382,30 +682,47 @@
 
         if (chatState === "AWAITING_QUESTION" || chatState === "CHATTING") {
           userData.question = text;
+
+          if (!currentSessionId && !hasDigit(text)) {
+            appendAIMessage("ขอเลขที่ต้องการวิเคราะห์ก่อนนะครับ/ค่ะ เช่น เบอร์โทร ทะเบียนรถ เลขบ้าน หรือเลขที่อยากดู พิมพ์เป็นตัวเลขอย่างน้อย 1 ตัวได้เลย");
+            userInput.value = "";
+            userInput.disabled = false;
+            sendBtn.disabled = false;
+            userInput.focus();
+            return;
+          }
+
           showTyping(true);
           userInput.disabled = true;
 
-          let profile = {};
-          try {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session && session.user) {
-              const { data: profileData } = await supabaseClient
-                .from("profiles").select("*").eq("id", session.user.id).single();
-              if (profileData) profile = profileData;
+          const { profile } = await getUserContext();
+          const isNewSession = !currentSessionId;
+
+          if (isNewSession) {
+            currentSessionNumberInput = text;
+            try {
+              await createNumerologySession(text);
+            } catch (err) {
+              console.error("Unable to create numerology session:", err);
             }
-          } catch (e) {}
+          }
+
+          await saveNumerologyMessage("user", text);
 
           try {
             const res = await fetch("/api/v1/numerology", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                name: profile.full_name || profile.nickname || "ผู้ใช้",
+                name: profile.nickname || profile.full_name || "ผู้ใช้",
+                full_name: profile.full_name || "",
+                nickname: profile.nickname || "",
                 birthdate: profile.birth_date || "",
                 category: userData.categoryKey,
                 category_label: userData.categoryLabel,
-                number_input: userData.question,
-                question: userData.question
+                number_input: currentSessionNumberInput || userData.question,
+                question: userData.question,
+                mode: isNewSession ? "NUMBER_OVERVIEW" : "NUMEROLOGY"
               })
             });
 
@@ -418,7 +735,11 @@
             userInput.placeholder = "ถามต่อได้เลย (เช่น แล้วเลขนี้เหมาะกับฉันไหม, ขอเลขทางเลือก)...";
             userInput.focus();
             chatState = "CHATTING";
-            appendAIMessage(data.prediction || data.result || data.message);
+            const reply = data.prediction || data.result || data.message;
+            appendAIMessage(reply);
+            await saveNumerologyMessage("assistant", reply);
+            await saveNumerologyReading(data);
+            await touchNumerologySession();
 
           } catch (err) {
             showTyping(false);

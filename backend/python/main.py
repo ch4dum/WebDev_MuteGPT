@@ -30,7 +30,9 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 model = genai.GenerativeModel('gemini-2.5-flash-lite')
 
 class ChatRequest(BaseModel):
-    name: str
+    name: str = "ลูกดวง"
+    full_name: Optional[str] = None
+    nickname: Optional[str] = None
     birthdate: str
     birthtime: str = "12:00"
     fan_birthdate: Optional[str] = None
@@ -40,11 +42,14 @@ class ChatRequest(BaseModel):
 
 class NumerologyRequest(BaseModel):
     name: str = "ผู้ใช้"
+    full_name: Optional[str] = None
+    nickname: Optional[str] = None
     birthdate: str = ""
     category: str = "general"
     category_label: str = "ทั่วไป"
     number_input: str
     question: str = ""
+    mode: str = "NUMEROLOGY"
 
 def calculate_root_number(value: str):
     digits = [int(ch) for ch in value if ch.isdigit()]
@@ -62,6 +67,12 @@ def calculate_root_number(value: str):
         "steps": steps,
         "root": total,
     }
+
+def get_display_name(name: str, full_name: Optional[str] = None, nickname: Optional[str] = None):
+    return nickname or full_name or name
+
+def get_name_context(name: str, full_name: Optional[str] = None, nickname: Optional[str] = None):
+    return f"- ชื่อเต็ม: {full_name or 'ไม่ระบุ'}\n- ชื่อเล่น: {nickname or 'ไม่ระบุ'}\n- ชื่อที่ใช้เรียกในคำตอบ: {get_display_name(name, full_name, nickname)}"
 
 def get_current_transits():
     """คำนวณตำแหน่งดาวปัจจุบันโดยใช้ flatlib"""
@@ -114,6 +125,7 @@ PROMPT_LIBRARY = {
         
         ### [Context & Inputs]
         - ผู้รับคำทำนาย: {name} ({status})
+        {name_context}
         - พื้นดวง (Natal): ราศี {zodiac}, วันเกิด {birthdate}, เวลาเกิด {birthtime}
         {partner_context}
         - ข้อมูลดาวปัจจุบัน (Transits): {current_planets_data} 
@@ -147,10 +159,15 @@ PROMPT_LIBRARY = {
 
 ### [Context & Inputs]
 - ผู้รับคำทำนาย: {name} ({status})
+{name_context}
 - พื้นดวง (Natal): ราศี {zodiac}, วันเกิด {birthdate}, เวลาเกิด {birthtime}
 {partner_context}
 - ข้อมูลดาวปัจจุบัน (Transits): {current_planets_data}
 - วันที่ปัจจุบัน: {current_date}
+
+!!!หน้าที่หลัก!!!
+- ตอบให้เป็นธรรมชาติโดยพิจารณาจาก Context ของผู้ใช้เป็นหลัก
+- ตอบเหมือนกำลังคุยต่อจาก overview ก่อนหน้า ห้ามเริ่ม session ใหม่หรือทักทายซ้ำ
 
 ### [Rules & Tone]
 - ถ้าผู้ใช้ถามข้อมูลส่วนตัวที่มีอยู่ใน Context เช่นวันเกิด ให้ตอบจาก Context โดยตรง ไม่ต้องทำนาย
@@ -188,19 +205,61 @@ PROMPT_LIBRARY = {
     "GENERAL": {
         "system": "คุณคือ 'แม่หมอ MuteGPT' ผู้เชี่ยวชาญการพยากรณ์ดวงชะตาทั่วไป วิเคราะห์พื้นดวงจากราศี {zodiac}, วันเกิด: {birthdate} และเวลาเกิด {birthtime}. ข้อมูลดาววันนี้: {current_planets_data}",
     },
+    "NUMBER_OVERVIEW": {
+        "system": """คุณคือ 'ปรมาจารย์หญิงเลขศาสตร์' แห่ง MuteGPT ผู้เชี่ยวชาญด้านเลขศาสตร์เชิงวิเคราะห์ ผสานหลักพลังตัวเลขและจิตวิทยาการใช้ชีวิต
+
+### [Context & Inputs]
+- ผู้รับคำทำนาย: {name}
+{name_context}
+- ข้อมูลพื้นฐาน: วันเกิด {birthdate}
+- ตัวเลขที่ต้องการวิเคราะห์: {number_input} ({category_label})
+- วันที่ปัจจุบัน: {current_date}
+- ผลรวมเลข: {calculation_steps}
+- Root Number: {root_number}
+
+### [Step-by-Step Analysis Logic]
+1. **Core Number Analysis:** คำนวณเลขแกนจากวันเกิด (Life Path Number) เพื่อดูพื้นฐานพลังชีวิต ถ้าวันเกิดไม่ระบุ ให้บอกว่าอ่านจากเลขที่ส่งมาเป็นหลัก
+2. **Number Breakdown:** แยกตัวเลข {number_input} แล้ววิเคราะห์ความหมายรายตัว (เช่น 1=ผู้นำ, 5=การเปลี่ยนแปลง, 8=การเงิน)
+3. **Energy Synergy:** วิเคราะห์ว่าตัวเลขเหล่านั้น “ส่งเสริม” หรือ “ขัดแย้ง” กับพื้นฐานของเจ้าชะตาเท่าที่ข้อมูลมี
+4. **Pattern Insight:** ดูผลรวมเลข รูปแบบเลขซ้ำ เลขคู่ เลขเรียง หรือจังหวะเลขที่เด่น
+
+### [Rules & Tone]
+- Tone: ปรมาจารย์หญิง (Empathetic, Wise, Insightful) แต่มีเหตุผล ไม่งมงาย
+- Language: ภาษาไทยทันสมัย อ่านง่าย ใช้ชื่อเล่นเรียกผู้รับคำทำนาย
+- ห้ามขึ้นต้นด้วยคำทักทายหรือแนะนำตัว ให้เริ่มที่ภาพรวมพลังตัวเลขทันที
+- **Constraints:** ห้ามฟันธง 100% ให้ใช้คำว่า "มีแนวโน้ม", "พลังของตัวเลขส่งผลให้..."
+- Structure: กระชับ ไม่เกิน 400 คำ
+
+### [Output Structure]
+
+# พื้นฐานพลังตัวเลข
+(วิเคราะห์เลขแกนจากวันเกิด ถ้ามีข้อมูล และบอกนิสัย/พลังชีวิตหลัก)
+
+# วิเคราะห์เลขที่ใช้งาน
+(เจาะลึก {number_input} ว่าดีด้านไหน เช่น การเงิน ความรัก การงาน หรือมีจุดต้องระวัง)
+
+# คำแนะนำการใช้เลข
+(แนะนำว่าควรใช้/หลีกเลี่ยง หรือปรับยังไงให้เสริมดวง เช่น เลขที่ควรเพิ่ม เลขที่ควรเลี่ยง)""",
+    },
     "NUMEROLOGY": {
         "system": """คุณคือ "นักเลขศาสตร์ AI" แห่ง MuteGPT ผู้เชี่ยวชาญด้านเลขศาสตร์ไทย-สากล โหราศาสตร์ตัวเลข และฮวงจุ้ยตัวเลข
+
+!!!หน้าที่หลัก!!!
+- ตอบให้เป็นธรรมชาติโดยพิจารณาจาก Context ของผู้ใช้เป็นหลัก
+- ตอบเหมือนกำลังคุยต่อจาก overview ก่อนหน้า ห้ามเริ่ม session ใหม่หรือทักทายซ้ำ
 
 หลักการตอบ:
 - ตอบเป็นภาษาไทย โทนอบอุ่น เป็นกันเอง และไม่ขายฝันเกินจริง
 - เรียกผู้ใช้ด้วยชื่อ "{name}" อย่างเป็นธรรมชาติ
-- วิเคราะห์จากตัวเลขที่ผู้ใช้ส่งมาเป็นหลัก ห้ามบอกว่าต้องมีข้อมูลเพิ่มถ้าวิเคราะห์จากเลขได้แล้ว
+- ตอบเหมือนกำลังคุยต่อจาก overview ก่อนหน้า ห้ามเริ่ม session ใหม่หรือทักทายซ้ำ
+- วิเคราะห์จากตัวเลขตั้งต้น {number_input} เป็นหลัก และตอบคำถามล่าสุดให้ตรงประเด็น
 - ใช้ Markdown ได้ เช่น หัวข้อสั้น ๆ, bullet point, ตัวหนา
-- ความยาวรวมประมาณ 250-450 คำ
+- ความยาวรวมประมาณ 150-350 คำ
 - หลีกเลี่ยงรูปแบบตอบซ้ำเดิมทุกครั้ง ให้ปรับหัวข้อและลีลาตามคำถาม
 
 ข้อมูลที่ใช้:
 - ชื่อผู้ใช้: {name}
+{name_context}
 - วันเกิด: {birthdate}
 - วันที่ปัจจุบัน: {current_date}
 - หมวดวิเคราะห์: {category_label} ({category})
@@ -208,18 +267,18 @@ PROMPT_LIBRARY = {
 - ผลรวมเลข: {calculation_steps}
 - Root Number: {root_number}
 
-โครงคำตอบที่ควรมี:
-1. เปิดด้วยการสรุปเลขนี้แบบสั้น ๆ
-2. อธิบายพลังของ Root Number และเลขเด่นที่ปรากฏ
-3. วิเคราะห์ว่าเหมาะกับหมวด {category_label} แค่ไหน
-4. ให้คะแนนความเป็นมงคล 1-10 พร้อมเหตุผล
-5. ให้คำแนะนำที่ทำตามได้จริง หรือข้อควรระวังถ้าเลขนี้ไม่สมดุล""",
+แนวทางตอบ:
+- ถ้าผู้ใช้ถามต่อ ให้ตอบต่อจากเลขเดิม ไม่ต้องสรุป overview ซ้ำ
+- ถ้าผู้ใช้ขอเลขทางเลือก ให้เสนอแนวเลขที่เหมาะกับหมวด {category_label}
+- ถ้าผู้ใช้ถามว่าดีไหม ให้ตอบข้อดี/ข้อควรระวังแบบกระชับ""",
     }
 }
 
 @app.post("/api/v1/horoscope")
 async def get_horoscope(req: ChatRequest):
     try:
+        display_name = get_display_name(req.name, req.full_name, req.nickname)
+        name_context = get_name_context(req.name, req.full_name, req.nickname)
         zodiac = get_thai_zodiac(req.birthdate)
         partner_context = "- ข้อมูลอีกฝ่าย: ไม่มี"
         if req.fan_birthdate:
@@ -236,7 +295,8 @@ async def get_horoscope(req: ChatRequest):
         prompt_config = PROMPT_LIBRARY.get(req.category, PROMPT_LIBRARY["GENERAL"])
         
         system_instruction = prompt_config["system"].format(
-            name=req.name,
+            name=display_name,
+            name_context=name_context,
             zodiac=zodiac,
             birthdate=req.birthdate,
             birthtime=req.birthtime,
@@ -270,6 +330,8 @@ async def get_horoscope(req: ChatRequest):
 @app.post("/api/v1/numerology")
 async def get_numerology(req: NumerologyRequest):
     try:
+        display_name = get_display_name(req.name, req.full_name, req.nickname)
+        name_context = get_name_context(req.name, req.full_name, req.nickname)
         root_data = calculate_root_number(req.number_input)
         if root_data is None:
             raise HTTPException(status_code=400, detail="Please provide at least one digit for numerology analysis.")
@@ -278,8 +340,10 @@ async def get_numerology(req: NumerologyRequest):
         current_date_str = now.strftime("%d %B %Y")
         steps_text = " -> ".join(str(step) for step in root_data["steps"])
 
-        system_instruction = PROMPT_LIBRARY["NUMEROLOGY"]["system"].format(
-            name=req.name,
+        prompt_key = "NUMBER_OVERVIEW" if req.mode == "NUMBER_OVERVIEW" else "NUMEROLOGY"
+        system_instruction = PROMPT_LIBRARY[prompt_key]["system"].format(
+            name=display_name,
+            name_context=name_context,
             birthdate=req.birthdate or "ไม่ระบุ",
             current_date=current_date_str,
             category=req.category,
