@@ -36,6 +36,31 @@ class ChatRequest(BaseModel):
     question: str
     category: str = "LOVE"
 
+class NumerologyRequest(BaseModel):
+    name: str = "ผู้ใช้"
+    birthdate: str = ""
+    category: str = "general"
+    category_label: str = "ทั่วไป"
+    number_input: str
+    question: str = ""
+
+def calculate_root_number(value: str):
+    digits = [int(ch) for ch in value if ch.isdigit()]
+    if not digits:
+        return None
+
+    total = sum(digits)
+    steps = [total]
+    while total > 9:
+        total = sum(int(ch) for ch in str(total))
+        steps.append(total)
+
+    return {
+        "digits": digits,
+        "steps": steps,
+        "root": total,
+    }
+
 def get_current_transits():
     """คำนวณตำแหน่งดาวปัจจุบันโดยใช้ flatlib"""
     try:
@@ -130,6 +155,33 @@ PROMPT_LIBRARY = {
     },
     "GENERAL": {
         "system": "คุณคือ 'แม่หมอ MuteGPT' ผู้เชี่ยวชาญการพยากรณ์ดวงชะตาทั่วไป วิเคราะห์พื้นดวงจากราศี {zodiac}, วันเกิด: {birthdate} และเวลาเกิด {birthtime}. ข้อมูลดาววันนี้: {current_planets_data}",
+    },
+    "NUMEROLOGY": {
+        "system": """คุณคือ "นักเลขศาสตร์ AI" แห่ง MuteGPT ผู้เชี่ยวชาญด้านเลขศาสตร์ไทย-สากล โหราศาสตร์ตัวเลข และฮวงจุ้ยตัวเลข
+
+หลักการตอบ:
+- ตอบเป็นภาษาไทย โทนอบอุ่น เป็นกันเอง และไม่ขายฝันเกินจริง
+- เรียกผู้ใช้ด้วยชื่อ "{name}" อย่างเป็นธรรมชาติ
+- วิเคราะห์จากตัวเลขที่ผู้ใช้ส่งมาเป็นหลัก ห้ามบอกว่าต้องมีข้อมูลเพิ่มถ้าวิเคราะห์จากเลขได้แล้ว
+- ใช้ Markdown ได้ เช่น หัวข้อสั้น ๆ, bullet point, ตัวหนา
+- ความยาวรวมประมาณ 250-450 คำ
+- หลีกเลี่ยงรูปแบบตอบซ้ำเดิมทุกครั้ง ให้ปรับหัวข้อและลีลาตามคำถาม
+
+ข้อมูลที่ใช้:
+- ชื่อผู้ใช้: {name}
+- วันเกิด: {birthdate}
+- วันที่ปัจจุบัน: {current_date}
+- หมวดวิเคราะห์: {category_label} ({category})
+- ตัวเลขที่ส่งมา: {number_input}
+- ผลรวมเลข: {calculation_steps}
+- Root Number: {root_number}
+
+โครงคำตอบที่ควรมี:
+1. เปิดด้วยการสรุปเลขนี้แบบสั้น ๆ
+2. อธิบายพลังของ Root Number และเลขเด่นที่ปรากฏ
+3. วิเคราะห์ว่าเหมาะกับหมวด {category_label} แค่ไหน
+4. ให้คะแนนความเป็นมงคล 1-10 พร้อมเหตุผล
+5. ให้คำแนะนำที่ทำตามได้จริง หรือข้อควรระวังถ้าเลขนี้ไม่สมดุล""",
     }
 }
 
@@ -169,6 +221,56 @@ async def get_horoscope(req: ChatRequest):
     except Exception as e:
         error_message = str(e)
         print(f"Error: {error_message}")
+
+        if "429" in error_message or "quota" in error_message.lower():
+            raise HTTPException(
+                status_code=429,
+                detail="Gemini API quota exceeded. Please wait and try again later, or check the Gemini API plan and billing settings."
+            )
+
+        raise HTTPException(status_code=500, detail=error_message)
+
+@app.post("/api/v1/numerology")
+async def get_numerology(req: NumerologyRequest):
+    try:
+        root_data = calculate_root_number(req.number_input)
+        if root_data is None:
+            raise HTTPException(status_code=400, detail="Please provide at least one digit for numerology analysis.")
+
+        now = datetime.now()
+        current_date_str = now.strftime("%d %B %Y")
+        steps_text = " -> ".join(str(step) for step in root_data["steps"])
+
+        system_instruction = PROMPT_LIBRARY["NUMEROLOGY"]["system"].format(
+            name=req.name,
+            birthdate=req.birthdate or "ไม่ระบุ",
+            current_date=current_date_str,
+            category=req.category,
+            category_label=req.category_label,
+            number_input=req.number_input,
+            calculation_steps=steps_text,
+            root_number=root_data["root"],
+        )
+
+        user_prompt = f"""
+ผู้ใช้ถาม/ส่งเลขมาว่า: {req.question or req.number_input}
+
+ช่วยวิเคราะห์เลขนี้ให้ตรงกับหมวด {req.category_label} โดยเริ่มตอบได้เลย ไม่ต้องอธิบายขั้นตอนระบบ
+"""
+
+        response = model.generate_content(system_instruction + "\n" + user_prompt)
+
+        return {
+            "root_number": root_data["root"],
+            "calculation_steps": root_data["steps"],
+            "prediction": response.text,
+            "status": "success",
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_message = str(e)
+        print(f"Numerology error: {error_message}")
 
         if "429" in error_message or "quota" in error_message.lower():
             raise HTTPException(

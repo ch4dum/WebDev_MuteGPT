@@ -58,6 +58,25 @@ app.post('/api/v1/horoscope', async (req, res) => {
     }
 });
 
+app.post('/api/v1/numerology', async (req, res) => {
+    try {
+        const upstream = await fetch(`${PYTHON_API_URL}/api/v1/numerology`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(req.body)
+        });
+
+        const payload = await upstream.text();
+        res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(payload);
+    } catch (error) {
+        console.error('Python numerology API proxy error:', error);
+        res.status(502).json({
+            status: 'error',
+            detail: 'Unable to connect to Python numerology API'
+        });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

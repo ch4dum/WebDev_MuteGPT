@@ -16,67 +16,49 @@
     <style>
       /* กำหนดตัวแปรสี (RGB) สำหรับทำ Dynamic Theme */
       :root {
-        /* โหมดเริ่มต้น / คนโสด (Pink/Old Rose) */
-        --c-primary: 236 72 153;
-        /* pink-500 */
-        --c-secondary: 225 29 72;
-        /* rose-600 */
-        --c-accent: 244 114 182;
-        /* pink-400 */
-        --c-light: 251 207 232;
-        /* pink-200 */
-        --c-dark: 131 24 67;
-        /* pink-900 */
+        /* Love theme (Red/Rose) */
+        --c-primary: 239 68 68;
+        /* red-500 */
+        --c-secondary: 190 18 60;
+        /* rose-700 */
+        --c-accent: 248 113 113;
+        /* red-400 */
+        --c-light: 254 202 202;
+        /* red-200 */
+        --c-dark: 127 29 29;
+        /* red-900 */
       }
 
       body.theme-single {
-        --c-primary: 236 72 153;
-        --c-secondary: 225 29 72;
-        --c-accent: 244 114 182;
-        --c-light: 251 207 232;
-        --c-dark: 131 24 67;
+        --c-primary: 239 68 68;
+        --c-secondary: 190 18 60;
+        --c-accent: 248 113 113;
+        --c-light: 254 202 202;
+        --c-dark: 127 29 29;
       }
 
       body.theme-talking {
-        /* คนมีคนคุย (Purple/Magenta) */
-        --c-primary: 168 85 247;
-        /* purple-500 */
-        --c-secondary: 192 38 211;
-        /* fuchsia-600 */
-        --c-accent: 192 132 252;
-        /* purple-400 */
-        --c-light: 233 213 255;
-        /* purple-200 */
-        --c-dark: 88 28 135;
-        /* purple-900 */
+        --c-primary: 225 29 72;
+        --c-secondary: 159 18 57;
+        --c-accent: 251 113 133;
+        --c-light: 255 228 230;
+        --c-dark: 136 19 55;
       }
 
       body.theme-couple {
-        /* คนมีคู่ (Blue/Navy) */
-        --c-primary: 59 130 246;
-        /* blue-500 */
-        --c-secondary: 67 56 202;
-        /* indigo-600 */
-        --c-accent: 96 165 250;
-        /* blue-400 */
-        --c-light: 191 219 254;
-        /* blue-200 */
-        --c-dark: 30 58 138;
-        /* blue-900 */
+        --c-primary: 220 38 38;
+        --c-secondary: 153 27 27;
+        --c-accent: 252 165 165;
+        --c-light: 254 226 226;
+        --c-dark: 127 29 29;
       }
 
       body.theme-broken {
-        /* คนเพิ่งเลิก (Gray/Silver) */
-        --c-primary: 100 116 139;
-        /* slate-500 */
-        --c-secondary: 71 85 105;
-        /* slate-600 */
-        --c-accent: 148 163 184;
-        /* slate-400 */
-        --c-light: 226 232 240;
-        /* slate-200 */
-        --c-dark: 15 23 42;
-        /* slate-900 */
+        --c-primary: 185 28 28;
+        --c-secondary: 127 29 29;
+        --c-accent: 248 113 113;
+        --c-light: 254 202 202;
+        --c-dark: 69 10 10;
       }
 
       body {
@@ -101,6 +83,44 @@
 
       ::-webkit-scrollbar-thumb:hover {
         background: rgb(var(--c-secondary));
+      }
+
+      @keyframes typing {
+        0%,
+        60%,
+        100% {
+          transform: translateY(0);
+          opacity: 0.5;
+        }
+        30% {
+          transform: translateY(-5px);
+          opacity: 1;
+        }
+      }
+
+      .typing-dot {
+        animation: typing 1.2s infinite;
+      }
+      .typing-dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .typing-dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes fadeSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .msg-animate {
+        animation: fadeSlideIn 0.35s ease forwards;
       }
 
       /* Markdown Styles */
@@ -215,10 +235,10 @@
       "
     >
       <div
-        class="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-purple-900/10 rounded-full blur-[150px] mix-blend-screen"
+        class="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-red-950/20 rounded-full blur-[150px] mix-blend-screen"
       ></div>
       <div
-        class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-amber-900/10 rounded-full blur-[120px] mix-blend-screen"
+        class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-rose-900/15 rounded-full blur-[120px] mix-blend-screen"
       ></div>
       <div
         class="absolute inset-0 opacity-[0.03]"
@@ -387,13 +407,13 @@
           </div>
         </div>
 
-        <!-- ตัวเลือกสถานะ (คงสีเดิมไว้เพื่อให้ผู้ใช้เห็นความแตกต่างของแต่ละโหมดก่อนกด) -->
+        <!-- ตัวเลือกสถานะ -->
         <div
           id="status-selection"
           class="flex flex-col gap-3 pl-14 pr-4 msg-animate"
           style="animation-delay: 0.5s"
         >
-          <!-- คนโสด (Pink) -->
+          <!-- คนโสด -->
           <button
             onclick="
               selectStatus(
@@ -402,21 +422,21 @@
                 'การเจอเนื้อคู่ หรือเสน่ห์ในช่วงนี้',
               )
             "
-            class="w-full text-left p-4 rounded-xl border border-pink-500/30 bg-[#1a0511]/60 hover:bg-[#240a1a]/80 transition-all flex items-center gap-4 group shadow-md"
+            class="w-full text-left p-4 rounded-xl border border-red-500/30 bg-red-950/30 hover:bg-red-900/40 transition-all flex items-center gap-4 group shadow-md"
           >
             <div
-              class="w-10 h-10 rounded-full bg-pink-500/20 border border-pink-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
+              class="w-10 h-10 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
             >
-              <i data-lucide="user" class="w-5 h-5 text-pink-400"></i>
+              <i data-lucide="user" class="w-5 h-5 text-red-400"></i>
             </div>
             <div>
-              <div class="font-bold text-pink-200">คนโสด (Single)</div>
+              <div class="font-bold text-red-200">คนโสด (Single)</div>
               <div class="text-xs text-slate-400 mt-0.5">
                 เน้นเรื่องการเจอเนื้อคู่ เสน่ห์ หรือคนที่จะเข้ามา
               </div>
             </div>
           </button>
-          <!-- คนมีคนคุย (Purple) -->
+          <!-- คนมีคนคุย -->
           <button
             onclick="
               selectStatus(
@@ -425,24 +445,24 @@
                 'ความชัดเจน และความรู้สึกของอีกฝ่าย',
               )
             "
-            class="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-[#110a24]/60 hover:bg-[#1a0f36]/80 transition-all flex items-center gap-4 group shadow-md"
+            class="w-full text-left p-4 rounded-xl border border-rose-500/30 bg-rose-950/30 hover:bg-rose-900/40 transition-all flex items-center gap-4 group shadow-md"
           >
             <div
-              class="w-10 h-10 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
+              class="w-10 h-10 rounded-full bg-rose-500/20 border border-rose-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
             >
               <i
                 data-lucide="message-circle-heart"
-                class="w-5 h-5 text-purple-400"
+                class="w-5 h-5 text-rose-400"
               ></i>
             </div>
             <div>
-              <div class="font-bold text-purple-200">คนมีคนคุย (Talking)</div>
+              <div class="font-bold text-rose-200">คนมีคนคุย (Talking)</div>
               <div class="text-xs text-slate-400 mt-0.5">
                 เน้นเรื่องความชัดเจน เขารู้สึกยังไงกับเรา
               </div>
             </div>
           </button>
-          <!-- คนมีคู่ (Blue) -->
+          <!-- คนมีคู่ -->
           <button
             onclick="
               selectStatus(
@@ -451,15 +471,15 @@
                 'ความสัมพันธ์ ความมั่นคง หรือสิ่งที่ต้องระวัง',
               )
             "
-            class="w-full text-left p-4 rounded-xl border border-blue-500/30 bg-[#0a1124]/60 hover:bg-[#0f1a36]/80 transition-all flex items-center gap-4 group shadow-md"
+            class="w-full text-left p-4 rounded-xl border border-red-400/30 bg-[#220808]/60 hover:bg-[#2f0b0b]/80 transition-all flex items-center gap-4 group shadow-md"
           >
             <div
-              class="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
+              class="w-10 h-10 rounded-full bg-red-400/20 border border-red-400/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
             >
-              <i data-lucide="users" class="w-5 h-5 text-blue-400"></i>
+              <i data-lucide="users" class="w-5 h-5 text-red-300"></i>
             </div>
             <div>
-              <div class="font-bold text-blue-200">
+              <div class="font-bold text-red-100">
                 คนมีคู่/มีแฟน (In a relationship)
               </div>
               <div class="text-xs text-slate-400 mt-0.5">
@@ -467,7 +487,7 @@
               </div>
             </div>
           </button>
-          <!-- คนเพิ่งเลิก (Gray) -->
+          <!-- คนเพิ่งเลิก -->
           <button
             onclick="
               selectStatus(
@@ -476,15 +496,15 @@
                 'โอกาสการกลับมา หรือการ Move on',
               )
             "
-            class="w-full text-left p-4 rounded-xl border border-slate-500/30 bg-[#1a1a1a]/60 hover:bg-[#242424]/80 transition-all flex items-center gap-4 group shadow-md"
+            class="w-full text-left p-4 rounded-xl border border-red-900/50 bg-[#160707]/70 hover:bg-[#240909]/80 transition-all flex items-center gap-4 group shadow-md"
           >
             <div
-              class="w-10 h-10 rounded-full bg-slate-500/20 border border-slate-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
+              class="w-10 h-10 rounded-full bg-red-900/30 border border-red-700/40 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"
             >
-              <i data-lucide="heart-crack" class="w-5 h-5 text-slate-400"></i>
+              <i data-lucide="heart-crack" class="w-5 h-5 text-red-300"></i>
             </div>
             <div>
-              <div class="font-bold text-slate-200">
+              <div class="font-bold text-red-100">
                 คนเพิ่งเลิก (Recently broken up)
               </div>
               <div class="text-xs text-slate-400 mt-0.5">
@@ -706,41 +726,6 @@
               .single();
             if (profileData) profile = profileData;
           }
-
-          // --- 1. เตรียมข้อมูลของ "คนถาม" (ส่งครบชุด) ---
-          let profileContext = `ข้อมูลของลูกดวง:
-            - ชื่อจริง: ${profile.full_name || "ไม่ระบุ"}
-            - ชื่อเล่น: ${profile.nickname || "ไม่ระบุ"}
-            - เพศ: ${profile.gender || "ไม่ระบุ"}
-            - วันเกิด: ${profile.birth_date || "ไม่ระบุ"}
-            - เวลาเกิด: ${profile.birth_time || "ไม่ระบุ"}`;
-
-          // --- 2. เตรียมข้อมูลของ "คนคุย" (ถ้ามี และไม่ใช่คนโสด) ---
-          let partnerContext = "";
-          // ตรวจสอบว่าถ้าไม่ใช่คนโสด ให้เพิ่มข้อมูลคนคุย/คู่
-          if (userData.status !== "SINGLE") {
-            partnerContext = `\n\nข้อมูลของอีกฝ่าย:
-            - ชื่อ/ชื่อเล่น: ${userData.partnerName || "ไม่ระบุ"}
-            - วันเกิด: ${userData.partnerBirthDate || "ไม่ระบุ"}`;
-          }
-
-          const systemPrompt = `คุณคือ "แม่หมอความรัก" ผู้เชี่ยวชาญด้านโหราศาสตร์และจิตวิทยาความสัมพันธ์ คุณจะวิเคราะห์ดวงจากชื่อ วันเดือนปีเกิด และเวลาเกิด เพื่อให้คำทำนายที่เฉพาะเจาะจงและแม่นยำที่สุด`;
-
-          const userContextPrompt = `
-            ${profileContext}
-            ${partnerContext}
-
-            สถานะปัจจุบัน: ${userData.statusLabel}
-            สิ่งที่ต้องการคำปรึกษา: ${userData.statusFocus}
-            ลูกดวงถามว่า: "${userData.question}"
-
-            คำสั่งสำหรับแม่หมอ:
-            1. นำชื่อและวันเดือนปีเกิด/เวลาเกิดของทั้งคู่มาวิเคราะห์พื้นดวงและความสมพงษ์
-            2. ทำนายแนวโน้มของเหตุการณ์ที่ลูกดวงถาม โดยใช้ภาษาที่อบอุ่นเหมือนพี่สอนน้องหรือเพื่อนคู่คิด
-            3. สรุปคำแนะนำที่ลูกดวงควรทำ
-            4. ตอนท้ายให้ถามคำถามกลับ 1 ประโยคเพื่อชวนคุยต่อ
-            5. ปีนี้คือ ปี 2026 
-            รูปแบบการตอบกลับ: ตอบแบบสรุปใจความสำคัญ 3-5 ประโยคก็พอ แต่ละหัวข้อ ไม่ต้องเกริ่นนำตัว ให้เริ่มคำทำนายเลย`;
 
           try {
             // เรียกผ่าน Node gateway เพื่อให้ frontend ไม่ผูกกับ port ของ Python โดยตรง

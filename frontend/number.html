@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Numerology Oracle - พยากรณ์เลขศาสตร์</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+      :root {
+        --c-primary: 59 130 246;
+        --c-secondary: 37 99 235;
+        --c-accent: 96 165 250;
+        --c-light: 191 219 254;
+        --c-dark: 30 58 138;
+      }
+
+      body {
+        font-family: "Prompt", sans-serif;
+        transition: background-color 0.8s ease;
+      }
+
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb {
+        background: rgb(var(--c-primary));
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-secondary)); }
+
+      @keyframes typing {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+        30% { transform: translateY(-5px); opacity: 1; }
+      }
+      .typing-dot { animation: typing 1.2s infinite; }
+      .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+      .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+      @keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .msg-animate { animation: fadeSlideIn 0.35s ease forwards; }
+
+      .markdown-content p { margin-bottom: 0.75rem; }
+      .markdown-content p:last-child { margin-bottom: 0; }
+      .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+        color: rgb(var(--c-light));
+        font-weight: 700;
+        line-height: 1.35;
+        margin: 0.75rem 0 0.5rem;
+      }
+      .markdown-content h1 { font-size: 1.25rem; }
+      .markdown-content h2 { font-size: 1.15rem; }
+      .markdown-content h3 { font-size: 1.05rem; }
+      .markdown-content strong { color: rgb(var(--c-accent)); font-weight: 600; }
+      .markdown-content em { color: rgb(var(--c-light)); }
+      .markdown-content ul, .markdown-content ol {
+        margin-left: 1.5rem;
+        margin-bottom: 0.75rem;
+      }
+      .markdown-content ul { list-style-type: disc; }
+      .markdown-content ol { list-style-type: decimal; }
+      .markdown-content li { margin-bottom: 0.25rem; }
+      .markdown-content blockquote {
+        border-left: 3px solid rgb(var(--c-primary));
+        padding-left: 0.9rem;
+        margin: 0.75rem 0;
+        color: rgb(var(--c-light));
+        background: rgb(var(--c-dark) / 0.18);
+        border-radius: 0.5rem;
+      }
+      .markdown-content code {
+        background: rgb(15 23 42 / 0.75);
+        color: rgb(var(--c-light));
+        border: 1px solid rgb(var(--c-primary) / 0.2);
+        border-radius: 0.35rem;
+        padding: 0.1rem 0.35rem;
+        font-size: 0.9em;
+      }
+      .markdown-content hr {
+        border: none;
+        border-top: 1px solid rgb(var(--c-primary) / 0.25);
+        margin: 1rem 0;
+      }
+    </style>
+  </head>
+
+  <body class="bg-[#020814] text-slate-200 h-screen flex flex-col overflow-hidden relative">
+
+    <!-- BACKGROUND -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden"
+      style="background: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), url('assets/background.jpg') no-repeat center center fixed; background-size: cover;">
+      <div class="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-900/20 rounded-full blur-[150px] mix-blend-screen"></div>
+      <div class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-indigo-900/15 rounded-full blur-[120px] mix-blend-screen"></div>
+      <div class="absolute inset-0 opacity-[0.03]"
+        style="background-image: radial-gradient(circle at center, #ffffff 1px, transparent 1px); background-size: 30px 30px;"></div>
+    </div>
+
+    <!-- GLOW OVERLAY -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+      <div class="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-900/30 rounded-full blur-[150px] mix-blend-screen"></div>
+      <div class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-blue-600/15 rounded-full blur-[120px] mix-blend-screen"></div>
+      <div class="absolute top-[20%] left-[50%] translate-x-[-50%] w-[80%] h-[50%] bg-blue-500/8 rounded-full blur-[180px] mix-blend-screen"></div>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="relative z-20 w-full bg-[#020814]/80 backdrop-blur-md border-b border-blue-500/20 py-3 shadow-[0_4px_30px_rgba(0,0,0,0.5)] shrink-0">
+      <div class="container mx-auto px-4 flex justify-between items-center max-w-4xl">
+        <div class="flex items-center gap-4">
+          <a href="main.html" class="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+          </a>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-blue-950/60 border border-blue-500/30 flex items-center justify-center shadow-inner">
+              <i data-lucide="hash" class="w-5 h-5 text-blue-400"></i>
+            </div>
+            <div>
+              <h1 class="text-xl font-bold text-white leading-none tracking-wide">Numerology Oracle 🔢</h1>
+              <p class="text-[11px] text-blue-300 mt-1">AI วิเคราะห์เลขศาสตร์เฉพาะคุณ</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 relative">
+          <div id="avatar-btn"
+            class="w-10 h-10 rounded-full flex items-center justify-center border cursor-pointer hover:scale-105 transition-all bg-blue-950/50 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+            <i data-lucide="user" class="w-5 h-5 text-blue-400"></i>
+          </div>
+
+          <!-- Account Popup -->
+          <div id="account-popup"
+            class="absolute top-[calc(100%+10px)] right-0 bg-[#040d1f]/95 backdrop-blur-xl rounded-3xl w-[340px] shadow-[0_10px_40px_rgba(0,0,0,0.8),0_0_20px_rgba(59,130,246,0.2)] border border-blue-500/30 z-[100] overflow-hidden"
+            style="display: none;">
+            <div class="p-6 text-center relative">
+              <button id="close-popup" class="absolute top-4 right-4 bg-transparent border-none text-slate-400 hover:text-blue-400 cursor-pointer transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+              <div id="popup-email" class="text-slate-50 text-[0.95rem] font-medium mb-1 break-all">loading...</div>
+              <div id="popup-managed" class="text-slate-400 text-xs mb-6"></div>
+              <div id="popup-avatar-large"
+                class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-950/80 to-blue-600/50 border border-blue-400/40 text-blue-200 flex items-center justify-center text-4xl mx-auto mb-4 relative shadow-[0_0_15px_rgba(59,130,246,0.4)]">
+                <span id="popup-avatar-letter"></span>
+                <div class="absolute -bottom-0.5 -right-0.5 bg-[#040d1f] border border-blue-500/50 rounded-full p-1.5 flex">
+                  <i data-lucide="camera" class="w-3.5 h-3.5 text-blue-300"></i>
+                </div>
+              </div>
+              <div id="popup-greeting" class="bg-gradient-to-r from-blue-200 to-blue-400 bg-clip-text text-transparent text-xl font-bold mb-6">Hi!</div>
+              <button onclick="handleLogout()"
+                class="bg-gradient-to-r from-red-500 to-red-800 text-white py-2 px-5 rounded-full border-none text-sm font-semibold cursor-pointer transition-all shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)] hover:-translate-y-[1px] inline-flex items-center justify-center gap-2">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+                ออกจากระบบ
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- CHAT AREA -->
+    <main class="relative z-10 flex-1 w-full max-w-4xl mx-auto flex flex-col min-h-0 bg-[#020c1e]/50 backdrop-blur-sm border-x border-white/5 shadow-2xl">
+      <div id="chat-messages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scroll-smooth">
+
+        <!-- Welcome Message -->
+        <div class="flex gap-3 msg-animate">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-900 border border-blue-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(96,165,250,0.3)] mt-1">
+            <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+          </div>
+          <div class="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] w-full">
+            <span class="text-xs text-blue-300 ml-1">นักเลขศาสตร์ AI</span>
+            <div class="bg-[#040d1f]/90 p-4 rounded-2xl rounded-tl-sm border border-blue-500/30 text-slate-200 text-sm md:text-base leading-relaxed shadow-lg">
+              สวัสดีครับ/ค่ะ ยินดีต้อนรับสู่ Numerology Oracle 🔢✨<br><br>
+              ที่นี่เราจะช่วยวิเคราะห์ <b>เลขมงคล</b> ตามหลักเลขศาสตร์ เพื่อให้คุณเลือกตัวเลขที่เหมาะสมกับพลังงานและดวงชะตาของคุณ<br><br>
+              กรุณาเลือก <b>"ประเภทเลข"</b> ที่คุณต้องการวิเคราะห์ก่อนนะครับ/ค่ะ
+            </div>
+          </div>
+        </div>
+
+        <!-- Category Selection -->
+        <div id="category-selection" class="flex flex-col gap-3 pl-14 pr-4 msg-animate" style="animation-delay: 0.5s">
+
+          <!-- เบอร์โทรศัพท์ -->
+          <button onclick="selectCategory('phone', 'เบอร์โทรศัพท์', 'ความโชคดี การสื่อสาร และพลังงานตัวเลขในเบอร์มือถือ')"
+            class="w-full text-left p-4 rounded-xl border border-blue-500/30 bg-blue-950/30 hover:bg-blue-900/40 transition-all flex items-center gap-4 group shadow-md">
+            <div class="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+              <i data-lucide="smartphone" class="w-5 h-5 text-blue-400"></i>
+            </div>
+            <div>
+              <div class="font-bold text-blue-200">เบอร์โทรศัพท์ (Phone Number)</div>
+              <div class="text-xs text-slate-400 mt-0.5">วิเคราะห์เบอร์มือถือ ตรวจว่าโชคดีหรือควรเปลี่ยน</div>
+            </div>
+          </button>
+
+          <!-- ทะเบียนรถ -->
+          <button onclick="selectCategory('plate', 'ทะเบียนรถ', 'พลังงานของตัวเลขทะเบียน ความปลอดภัย และโชคลาภในการเดินทาง')"
+            class="w-full text-left p-4 rounded-xl border border-blue-400/30 bg-blue-950/30 hover:bg-blue-900/40 transition-all flex items-center gap-4 group shadow-md">
+            <div class="w-10 h-10 rounded-full bg-blue-400/20 border border-blue-400/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+              <i data-lucide="car" class="w-5 h-5 text-blue-300"></i>
+            </div>
+            <div>
+              <div class="font-bold text-blue-100">ทะเบียนรถ (License Plate)</div>
+              <div class="text-xs text-slate-400 mt-0.5">เช็กเลขทะเบียน ดูความปลอดภัย โชคดีในการเดินทาง</div>
+            </div>
+          </button>
+
+          <!-- เลขที่บ้าน -->
+          <button onclick="selectCategory('address', 'เลขที่บ้าน / ห้อง', 'พลังงานที่อยู่อาศัย ความมั่นคง และความเจริญรุ่งเรือง')"
+            class="w-full text-left p-4 rounded-xl border border-indigo-500/30 bg-indigo-950/20 hover:bg-indigo-900/30 transition-all flex items-center gap-4 group shadow-md">
+            <div class="w-10 h-10 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+              <i data-lucide="home" class="w-5 h-5 text-indigo-400"></i>
+            </div>
+            <div>
+              <div class="font-bold text-indigo-200">เลขที่บ้าน / ห้อง (House Number)</div>
+              <div class="text-xs text-slate-400 mt-0.5">วิเคราะห์เลขที่อยู่อาศัย ห้องชุด หรืออาคาร</div>
+            </div>
+          </button>
+
+          <!-- เลขบัญชีธนาคาร -->
+          <button onclick="selectCategory('bank', 'เลขบัญชีธนาคาร', 'ความมั่งคั่ง ทรัพย์สิน และพลังงานการเงิน')"
+            class="w-full text-left p-4 rounded-xl border border-sky-500/30 bg-sky-950/20 hover:bg-sky-900/30 transition-all flex items-center gap-4 group shadow-md">
+            <div class="w-10 h-10 rounded-full bg-sky-500/20 border border-sky-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+              <i data-lucide="credit-card" class="w-5 h-5 text-sky-400"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sky-200">เลขบัญชีธนาคาร (Bank Account)</div>
+              <div class="text-xs text-slate-400 mt-0.5">ดูพลังงานการเงินจากตัวเลขในบัญชีของคุณ</div>
+            </div>
+          </button>
+
+          <!-- เลขมงคลทั่วไป -->
+          <button onclick="selectCategory('general', 'เลขมงคลทั่วไป', 'เลขที่ชื่นชอบ เลขวันเกิด หรือเลขที่ต้องการให้ช่วยวิเคราะห์')"
+            class="w-full text-left p-4 rounded-xl border border-blue-300/20 bg-slate-900/30 hover:bg-slate-800/40 transition-all flex items-center gap-4 group shadow-md">
+            <div class="w-10 h-10 rounded-full bg-blue-300/10 border border-blue-300/20 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+              <i data-lucide="star" class="w-5 h-5 text-blue-300"></i>
+            </div>
+            <div>
+              <div class="font-bold text-blue-100">เลขมงคลทั่วไป (Lucky Numbers)</div>
+              <div class="text-xs text-slate-400 mt-0.5">วิเคราะห์ตัวเลขอื่นๆ เช่น เลขวันเกิด เลขที่ชอบ</div>
+            </div>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Typing Indicator -->
+      <div id="typing-indicator" class="hidden px-4 md:px-6 pb-4 shrink-0">
+        <div class="flex gap-3">
+          <div class="w-8 h-8 rounded-full bg-blue-950/50 border border-blue-400/50 flex items-center justify-center shrink-0">
+            <i data-lucide="sparkles" class="w-4 h-4 text-blue-300"></i>
+          </div>
+          <div class="bg-[#040d1f]/90 py-3 px-4 rounded-2xl rounded-tl-sm border border-blue-500/30 flex gap-1 items-center w-fit shadow-lg">
+            <div class="w-2 h-2 rounded-full typing-dot bg-blue-400 opacity-70"></div>
+            <div class="w-2 h-2 rounded-full typing-dot bg-blue-400 opacity-70"></div>
+            <div class="w-2 h-2 rounded-full typing-dot bg-blue-400 opacity-70"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INPUT AREA -->
+      <div class="w-full bg-[#020814]/90 backdrop-blur-xl border-t border-blue-500/30 p-4 shrink-0 relative z-20">
+        <div class="max-w-4xl mx-auto relative flex items-center gap-2">
+          <input type="text" id="user-input" disabled
+            placeholder="กรุณาเลือกประเภทเลขด้านบนก่อนนะครับ..."
+            class="w-full bg-[#040d1f] border border-slate-700 focus:border-blue-500 text-white rounded-full py-3 px-6 pr-14 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-inner"
+            onkeydown="if (event.key === 'Enter') { sendMessage(); }" />
+          <button id="send-btn" disabled onclick="sendMessage()"
+            class="absolute right-2 top-1.5 w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-700 flex items-center justify-center text-white hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_10px_rgba(96,165,250,0.4)]">
+            <i data-lucide="send" class="w-4 h-4 ml-1"></i>
+          </button>
+        </div>
+        <p class="text-center text-[10px] text-slate-500 mt-2">AI อาจมีข้อผิดพลาด โปรดใช้วิจารณญาณประกอบการตัดสินใจ</p>
+      </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+      lucide.createIcons();
+
+      let chatState = "AWAITING_CATEGORY";
+      let userData = { categoryKey: "", categoryLabel: "", categoryFocus: "", question: "" };
+
+      const chatMessages = document.getElementById("chat-messages");
+      const userInput = document.getElementById("user-input");
+      const sendBtn = document.getElementById("send-btn");
+      const typingIndicator = document.getElementById("typing-indicator");
+
+      if (window.marked) { marked.setOptions({ breaks: true, gfm: true }); }
+
+      function scrollToBottom() {
+        setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 100);
+      }
+
+      function showTyping(show) {
+        if (show) { typingIndicator.classList.remove("hidden"); scrollToBottom(); }
+        else { typingIndicator.classList.add("hidden"); }
+      }
+
+      function appendUserMessage(text) {
+        chatMessages.insertAdjacentHTML("beforeend", `
+          <div class="flex gap-3 justify-end msg-animate">
+            <div class="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] items-end">
+              <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-4 rounded-2xl rounded-tr-sm text-white text-sm md:text-base leading-relaxed shadow-lg">
+                ${text}
+              </div>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center shrink-0 overflow-hidden">
+              <span class="text-blue-300 font-bold">U</span>
+            </div>
+          </div>`);
+        scrollToBottom();
+      }
+
+      function appendAIMessage(text) {
+        const htmlContent = window.marked ? marked.parse(text) : text;
+        chatMessages.insertAdjacentHTML("beforeend", `
+          <div class="flex gap-3 msg-animate w-full">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-900 border border-blue-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(96,165,250,0.3)] mt-1">
+              <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+            </div>
+            <div class="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] w-full">
+              <span class="text-xs text-blue-300 ml-1">นักเลขศาสตร์ AI</span>
+              <div class="bg-[#040d1f]/90 p-4 rounded-2xl rounded-tl-sm border border-blue-500/30 text-slate-200 text-sm md:text-base leading-relaxed shadow-lg overflow-hidden w-full markdown-content">
+                ${htmlContent}
+              </div>
+            </div>
+          </div>`);
+        lucide.createIcons();
+        scrollToBottom();
+      }
+
+      function selectCategory(key, label, focus) {
+        if (chatState !== "AWAITING_CATEGORY") return;
+        userData.categoryKey = key;
+        userData.categoryLabel = label;
+        userData.categoryFocus = focus;
+
+        document.getElementById("category-selection").style.display = "none";
+        appendUserMessage(`ต้องการวิเคราะห์: <b>${label}</b>`);
+        showTyping(true);
+
+        setTimeout(() => {
+          showTyping(false);
+          chatState = "AWAITING_QUESTION";
+          userInput.disabled = false;
+          sendBtn.disabled = false;
+
+          const placeholders = {
+            phone: "พิมพ์เบอร์โทรที่ต้องการวิเคราะห์ (เช่น 0812345678)...",
+            plate: "พิมพ์เลขทะเบียนรถ (เช่น กข 1234 กรุงเทพ)...",
+            address: "พิมพ์เลขที่บ้าน/ห้อง (เช่น 888, ห้อง 209)...",
+            bank: "พิมพ์เลขบัญชีธนาคาร หรือ 4 ตัวหลัง...",
+            general: "พิมพ์ตัวเลขที่ต้องการให้วิเคราะห์..."
+          };
+          userInput.placeholder = placeholders[key] || "พิมพ์ตัวเลขที่ต้องการวิเคราะห์...";
+          userInput.focus();
+
+          const intros = {
+            phone: `รับทราบแล้วครับ/ค่ะ 📱 เลขโทรศัพท์นั้นมีพลังงานมากกว่าที่คิดนะครับ เพราะเราใช้มันทุกวัน พลังงานของตัวเลขจึงส่งผลต่อชีวิตได้อย่างต่อเนื่อง<br><br><b>กรุณาพิมพ์เบอร์โทรที่ต้องการวิเคราะห์ได้เลยครับ/ค่ะ</b> (ข้อมูลของคุณจะถูกเก็บเป็นความลับ)`,
+            plate: `รับทราบแล้วครับ/ค่ะ 🚗 ทะเบียนรถเป็นเลขที่อยู่กับเราตลอดการเดินทาง พลังงานของมันส่งผลต่อความปลอดภัยและโชคลาภในการเดินทางได้<br><br><b>กรุณาพิมพ์เลขทะเบียนรถที่ต้องการวิเคราะห์ได้เลยครับ/ค่ะ</b>`,
+            address: `รับทราบแล้วครับ/ค่ะ 🏠 เลขที่บ้านหรือห้องพักส่งผลต่อพลังงานในที่อยู่อาศัย ความมั่นคง และความเจริญรุ่งเรืองของผู้อยู่อาศัยอย่างมาก<br><br><b>กรุณาพิมพ์เลขที่บ้านหรือห้องที่ต้องการวิเคราะห์ได้เลยครับ/ค่ะ</b>`,
+            bank: `รับทราบแล้วครับ/ค่ะ 💳 เลขบัญชีธนาคารนั้นเชื่อมโยงกับพลังงานการเงินและทรัพย์สินของเราโดยตรง<br><br><b>กรุณาพิมพ์เลขบัญชี (หรือเพียง 4 ตัวหลังก็ได้) ที่ต้องการวิเคราะห์ได้เลยครับ/ค่ะ</b>`,
+            general: `รับทราบแล้วครับ/ค่ะ ⭐ ไม่ว่าจะเป็นเลขวันเกิด เลขที่ชื่นชอบ หรือเลขที่สงสัย เลขศาสตร์สามารถอธิบายพลังงานของตัวเลขนั้นๆ ได้<br><br><b>กรุณาพิมพ์ตัวเลขที่ต้องการวิเคราะห์ได้เลยครับ/ค่ะ พร้อมบอกด้วยว่าเป็นเลขอะไร</b>`
+          };
+          appendAIMessage(intros[key] || `เลือกหมวด <b>${label}</b> แล้วนะครับ/ค่ะ กรุณาพิมพ์ตัวเลขที่ต้องการวิเคราะห์ได้เลย`);
+        }, 1000);
+      }
+
+      async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        appendUserMessage(text);
+        userInput.value = "";
+
+        if (chatState === "AWAITING_QUESTION" || chatState === "CHATTING") {
+          userData.question = text;
+          showTyping(true);
+          userInput.disabled = true;
+
+          let profile = {};
+          try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session && session.user) {
+              const { data: profileData } = await supabaseClient
+                .from("profiles").select("*").eq("id", session.user.id).single();
+              if (profileData) profile = profileData;
+            }
+          } catch (e) {}
+
+          try {
+            const res = await fetch("/api/v1/numerology", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: profile.full_name || profile.nickname || "ผู้ใช้",
+                birthdate: profile.birth_date || "",
+                category: userData.categoryKey,
+                category_label: userData.categoryLabel,
+                number_input: userData.question,
+                question: userData.question
+              })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.detail || `API error ${res.status}`);
+
+            showTyping(false);
+            userInput.disabled = false;
+            userInput.placeholder = "ถามต่อได้เลย (เช่น แล้วเลขนี้เหมาะกับฉันไหม, ขอเลขทางเลือก)...";
+            userInput.focus();
+            chatState = "CHATTING";
+            appendAIMessage(data.prediction || data.result || data.message);
+
+          } catch (err) {
+            showTyping(false);
+            userInput.disabled = false;
+            userInput.placeholder = "ถามต่อได้เลย...";
+            userInput.focus();
+            appendAIMessage("ขออภัยครับ/ค่ะ ระบบกำลังมีปัญหา กรุณาลองใหม่อีกครั้ง 🔢");
+            console.error(err);
+          }
+        }
+      }
+
+      // Profile Popup
+      async function loadProfileForPopup() {
+        const checkClient = setInterval(async () => {
+          if (typeof supabaseClient !== "undefined" && supabaseClient) {
+            clearInterval(checkClient);
+            try {
+              const { data: { session } } = await supabaseClient.auth.getSession();
+              if (session && session.user) {
+                const userEmail = session.user.email;
+                if (userEmail) {
+                  document.getElementById("popup-email").textContent = userEmail;
+                  const domain = userEmail.split("@")[1];
+                  if (domain) document.getElementById("popup-managed").textContent = "Managed by " + domain;
+                }
+                const { data: profile } = await supabaseClient.from("profiles").select("full_name").eq("id", session.user.id).single();
+                const displayName = profile?.full_name || userEmail?.split("@")[0] || "USER";
+                document.getElementById("popup-greeting").textContent = "Hi, " + displayName.toUpperCase() + "!";
+                const firstLetter = displayName.charAt(0).toUpperCase();
+                document.getElementById("popup-avatar-letter").textContent = firstLetter;
+                document.getElementById("avatar-btn").innerHTML = `<span class="text-blue-400 font-bold text-lg">${firstLetter}</span>`;
+              }
+            } catch (err) { console.error(err); }
+          }
+        }, 100);
+      }
+      loadProfileForPopup();
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const avatarBtn = document.getElementById("avatar-btn");
+        const accountPopup = document.getElementById("account-popup");
+        const closePopup = document.getElementById("close-popup");
+
+        if (avatarBtn && accountPopup) {
+          avatarBtn.addEventListener("click", () => {
+            accountPopup.style.display = accountPopup.style.display === "none" ? "block" : "none";
+          });
+          closePopup?.addEventListener("click", () => { accountPopup.style.display = "none"; });
+          document.addEventListener("click", (e) => {
+            if (!avatarBtn.contains(e.target) && !accountPopup.contains(e.target)) {
+              accountPopup.style.display = "none";
+            }
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
