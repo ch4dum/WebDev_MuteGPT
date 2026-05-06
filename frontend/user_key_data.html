@@ -8,9 +8,11 @@
   <title>ผูกดวงชะตา — MuteGPT</title>
   <!-- นำเข้า Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="css/styles.css?v=2" />
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </head>
 
 <body>
@@ -196,7 +198,8 @@
             <label for="input-birthdate">วัน/เดือน/ปีเกิด</label>
             <div class="profile-input-wrap">
               <div class="field-icon"><i data-lucide="calendar"></i></div>
-              <input id="input-birthdate" type="date" class="profile-input" required />
+              <input id="input-birthdate" type="text" class="profile-input" inputmode="numeric"
+                placeholder="เช่น 31/12/2000" maxlength="10" required />
             </div>
           </div>
 
@@ -256,11 +259,57 @@
       });
     }
 
-    // Set max birthdate to today
     const birthdateInput = document.getElementById('input-birthdate');
+
+    function isoDateToDisplay(isoDate) {
+      if (!isoDate) return '';
+      const [year, month, day] = isoDate.split('-');
+      if (!year || !month || !day) return isoDate;
+      return `${day}/${month}/${year}`;
+    }
+
+    function displayDateToIso(displayDate) {
+      const match = displayDate.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (!match) return null;
+
+      const day = match[1].padStart(2, '0');
+      const month = match[2].padStart(2, '0');
+      const year = match[3];
+      const isoDate = `${year}-${month}-${day}`;
+      const parsed = new Date(`${isoDate}T00:00:00`);
+
+      if (
+        Number.isNaN(parsed.getTime()) ||
+        parsed.getFullYear() !== Number(year) ||
+        parsed.getMonth() + 1 !== Number(month) ||
+        parsed.getDate() !== Number(day)
+      ) {
+        return null;
+      }
+
+      return isoDate;
+    }
+
     if (birthdateInput) {
-      const today = new Date().toISOString().split('T')[0];
-      birthdateInput.setAttribute('max', today);
+      if (window.flatpickr) {
+        flatpickr(birthdateInput, {
+          dateFormat: 'd/m/Y',
+          allowInput: true,
+          maxDate: 'today',
+          disableMobile: true,
+        });
+      }
+
+      birthdateInput.addEventListener('blur', () => {
+        const digits = birthdateInput.value.replace(/\D/g, '');
+        if (digits.length !== 8) return;
+
+        const parts = [];
+        parts.push(digits.slice(0, 2));
+        parts.push(digits.slice(2, 4));
+        parts.push(digits.slice(4, 8));
+        birthdateInput.value = parts.join('/');
+      });
     }
 
     // --- Load Profile Data ---
@@ -295,7 +344,7 @@
                 if (profile.full_name) document.getElementById('input-fullname').value = profile.full_name;
                 if (profile.nickname) document.getElementById('input-nickname').value = profile.nickname;
                 if (profile.phone_last4) document.getElementById('input-phone-last4').value = profile.phone_last4;
-                if (profile.birth_date) document.getElementById('input-birthdate').value = profile.birth_date;
+                if (profile.birth_date) document.getElementById('input-birthdate').value = isoDateToDisplay(profile.birth_date);
                 if (profile.birth_time) document.getElementById('input-birthtime').value = profile.birth_time;
                 if (profile.gender) {
                   const genderRadio = document.querySelector(`input[name="gender"][value="${profile.gender}"]`);
@@ -445,9 +494,18 @@
         return;
       }
 
+      const birthDateIso = displayDateToIso(birthdateInput.value);
+      if (!birthDateIso) {
+        birthdateInput.classList.remove('input-error');
+        void birthdateInput.offsetWidth;
+        birthdateInput.classList.add('input-error');
+        showErrorToast('กรุณากรอกวันเกิดเป็นรูปแบบ วัน/เดือน/ปี เช่น 31/12/2000');
+        return;
+      }
+
       // Prevent future dates
-      if (birthdateInput && birthdateInput.value) {
-        const selectedDate = new Date(birthdateInput.value);
+      if (birthdateInput && birthDateIso) {
+        const selectedDate = new Date(`${birthDateIso}T00:00:00`);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         if (selectedDate > today) {
@@ -466,7 +524,7 @@
           full_name: document.getElementById('input-fullname').value,
           nickname: document.getElementById('input-nickname').value,
           phone_last4: document.getElementById('input-phone-last4').value,
-          birth_date: document.getElementById('input-birthdate').value,
+          birth_date: birthDateIso,
           birth_time: document.getElementById('input-birthtime').value,
           gender: genderSelected.value,
           updated_at: new Date()

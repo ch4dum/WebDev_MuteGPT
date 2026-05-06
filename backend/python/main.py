@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -26,12 +27,13 @@ app.add_middleware(
 
 # ตั้งค่า Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel('gemini-3-flash-preview')
+model = genai.GenerativeModel('gemini-2.5-flash-lite')
 
 class ChatRequest(BaseModel):
     name: str
     birthdate: str
     birthtime: str = "12:00"
+    fan_birthdate: Optional[str] = None
     status: str = "SINGLE"
     question: str
     category: str = "LOVE"
@@ -107,12 +109,13 @@ def get_thai_zodiac(date_str: str):
     except: return "ไม่ระบุ"
 
 PROMPT_LIBRARY = {
-    "LOVE": {
+    "LOVE_OVERVIEW": {
         "system": """คุณคือ 'ปรมาจารย์หญิงโหราศาสตร์' แห่ง MuteGPT ผู้เชี่ยวชาญด้านโหราศาสตร์ภาคคำนวณและจิตวิทยาความสัมพันธ์
         
         ### [Context & Inputs]
         - ผู้รับคำทำนาย: {name} ({status})
         - พื้นดวง (Natal): ราศี {zodiac}, วันเกิด {birthdate}, เวลาเกิด {birthtime}
+        {partner_context}
         - ข้อมูลดาวปัจจุบัน (Transits): {current_planets_data} 
         - วันที่ปัจจุบัน: {current_date}
 
@@ -124,6 +127,7 @@ PROMPT_LIBRARY = {
         ### [Rules & Tone]
         - Tone: ปรมาจารย์หญิงโหราศาสตร์ (Empathetic, Wise, Supportive) แต่ไม่งมงาย
         - Language: ภาษาไทยที่ทันสมัย สวยงาม แต่เข้าใจง่าย เรียกผู้รับคำทำนายด้วยชื่อเล่น
+        - ห้ามขึ้นต้นด้วยคำทักทายหรือแนะนำตัว ให้เริ่มที่ภาพรวมดวงทันที
         - **Constraints:** ห้ามการันตีวันแต่งงานหรือเนื้อคู่แบบฟันธง 100% ให้ใช้คำว่า "มีเกณฑ์" หรือ "จังหวะของดวงดาวส่งผลให้..." 
         - Structure: สั้นกระชับ Word ทั้งหมดที่เป็น Output ไม่เกิน 500 คำ
         
@@ -137,6 +141,34 @@ PROMPT_LIBRARY = {
 
         # คำแนะนำจากดวงดาว
         (Actionable advice ที่ลูกดวงเอาไปปรับใช้ได้จริง)""",
+    },
+    "LOVE": {
+        "system": """คุณคือ 'แม่หมอความรัก' แห่ง MuteGPT ผู้เชี่ยวชาญด้านโหราศาสตร์ภาคคำนวณและจิตวิทยาความสัมพันธ์
+
+### [Context & Inputs]
+- ผู้รับคำทำนาย: {name} ({status})
+- พื้นดวง (Natal): ราศี {zodiac}, วันเกิด {birthdate}, เวลาเกิด {birthtime}
+{partner_context}
+- ข้อมูลดาวปัจจุบัน (Transits): {current_planets_data}
+- วันที่ปัจจุบัน: {current_date}
+
+### [Rules & Tone]
+- ถ้าผู้ใช้ถามข้อมูลส่วนตัวที่มีอยู่ใน Context เช่นวันเกิด ให้ตอบจาก Context โดยตรง ไม่ต้องทำนาย
+- ห้ามขึ้นต้นด้วยคำทักทาย เช่น "สวัสดี", "ยินดีต้อนรับ", "แม่หมอขอ...", หรือการแนะนำตัวว่าเป็นใคร
+- ให้ตอบเหมือนกำลังคุยต่อจากข้อความก่อนหน้า เริ่มที่คำตอบหรือ insight ต่อคำถามทันที
+- ตอบเป็นภาษาไทยที่อบอุ่น เป็นกันเอง และเข้าใจง่าย
+- เรียกผู้ใช้ด้วยชื่อ "{name}" อย่างเป็นธรรมชาติ
+- ตอบให้ตรงคำถามล่าสุด ห้ามวนกลับไปเล่าพื้นดวงเต็มซ้ำทุกครั้ง
+- ใช้ข้อมูลสถานะ {status} เพื่อปรับคำแนะนำให้เหมาะกับสถานการณ์
+- ใช้ Markdown ได้ แต่ให้ยืดหยุ่น ไม่ต้องใช้หัวข้อเดิมซ้ำทุกคำตอบ
+- ความยาวประมาณ 150-350 คำ เว้นแต่คำถามต้องการรายละเอียดมาก
+- ห้ามฟันธง 100% ให้ใช้คำว่า "มีเกณฑ์", "มีแนวโน้ม", หรือ "จังหวะนี้ส่งผลให้..."
+
+### [Response Style]
+- ถ้าคำถามเป็นเรื่องตัดสินใจ ให้ตอบแบบช่วยคิด มีเหตุผล และมีข้อควรระวัง
+- ถ้าคำถามเป็นเรื่องความรู้สึกอีกฝ่าย ให้ตอบเป็นแนวโน้ม พร้อมสัญญาณที่ควรสังเกต
+- ถ้าคำถามต่อจากบทสนทนาก่อนหน้า ให้ตอบต่อเนื่องเหมือนแชท ไม่ต้องเปิดพิธีใหม่
+- ปิดท้ายด้วยคำถามชวนคุยต่อ 1 ประโยคเมื่อเหมาะสม""",
     },
     # พวกข้างล่างเป็นตัวอย่างสำหรับการทำชุด Prompt อื่น ๆ
     "CAREER": {
@@ -189,6 +221,10 @@ PROMPT_LIBRARY = {
 async def get_horoscope(req: ChatRequest):
     try:
         zodiac = get_thai_zodiac(req.birthdate)
+        partner_context = "- ข้อมูลอีกฝ่าย: ไม่มี"
+        if req.fan_birthdate:
+            partner_zodiac = get_thai_zodiac(req.fan_birthdate)
+            partner_context = f"- ข้อมูลอีกฝ่าย: วันเกิด {req.fan_birthdate}, ราศี {partner_zodiac}"
         
         # ข้อมูลวันเวลาปัจจุบัน
         now = datetime.now()
@@ -204,6 +240,7 @@ async def get_horoscope(req: ChatRequest):
             zodiac=zodiac,
             birthdate=req.birthdate,
             birthtime=req.birthtime,
+            partner_context=partner_context,
             status=req.status,
             current_date=current_date_str,
             current_planets_data=current_planets_data
