@@ -6,3 +6,7 @@ node_modules/
 
 # Environment variables
 .env
+
+# Python generated files
+__pycache__/
+*.py[cod]
