@@ -523,6 +523,7 @@
         let currentUser = null;
         let currentProfile = {};
         let currentColorSessionId = null;
+        let pendingColorOverview = null;
         let hasShownColorSetupWarning = false;
         const colorHistoryCache = new Map();
 
@@ -546,6 +547,7 @@
             chatState = "AWAITING_CATEGORY";
             userData = { categoryKey: "", categoryLabel: "", categoryFocus: "", question: "" };
             currentColorSessionId = null;
+            pendingColorOverview = null;
             colorHistoryCache.clear();
             showTyping(false);
 
@@ -577,7 +579,18 @@
             resetToCategorySelection();
         }
 
+        function getUserInitial() {
+            const displayName =
+                currentProfile.full_name ||
+                currentProfile.nickname ||
+                currentUser?.email?.split("@")[0] ||
+                document.querySelector("#avatar-btn span")?.textContent?.trim() ||
+                "U";
+            return displayName.trim().charAt(0).toUpperCase();
+        }
+
         function appendUserMessage(text) {
+            const userInitial = escapeHtml(getUserInitial());
             chatMessages.insertAdjacentHTML("beforeend", `
           <div class="flex gap-3 justify-end msg-animate">
             <div class="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] items-end">
@@ -586,7 +599,7 @@
               </div>
             </div>
             <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center shrink-0 overflow-hidden">
-              <span class="text-pink-300 font-bold">U</span>
+              <span class="text-pink-300 font-bold">${userInitial}</span>
             </div>
           </div>`);
             scrollToBottom();
@@ -731,6 +744,41 @@
             }
         }
 
+        async function requestColorReading(profile, question, mode) {
+            const res = await fetch("/api/v1/lucky-color", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: profile.nickname || profile.full_name || "ผู้ใช้",
+                    full_name: profile.full_name || "",
+                    nickname: profile.nickname || "",
+                    birthdate: profile.birth_date || "",
+                    category: userData.categoryKey,
+                    category_label: userData.categoryLabel,
+                    question,
+                    mode,
+                })
+            });
+
+            const contentType = res.headers.get("content-type") || "";
+            const data = contentType.includes("application/json")
+                ? await res.json()
+                : { detail: await res.text() };
+
+            if (!res.ok) throw new Error(data.detail || `API error ${res.status}`);
+            return data;
+        }
+
+        function getColorOverviewQuestion(key) {
+            const profileName = currentProfile.nickname || currentProfile.full_name || "ผู้ใช้";
+            const questions = {
+                daily: `ช่วยแนะนำสีมงคลประจำวันนี้ให้ ${profileName} จากวันที่ปัจจุบัน โดยแยกสีเด่น สีเสริม และสีที่ควรเลี่ยง`,
+                personal: `ช่วยแนะนำสีถูกโฉลกเฉพาะตัวให้ ${profileName} จากข้อมูลโปรไฟล์ วันเกิด และชื่อของผู้ใช้`,
+                wealth: `ช่วยแนะนำสีเสริมโชคลาภ การเงิน และความสำเร็จให้ ${profileName} จากข้อมูลโปรไฟล์ของผู้ใช้`,
+            };
+            return questions[key] || `ช่วยวิเคราะห์ภาพรวมหมวด ${userData.categoryLabel}`;
+        }
+
         function appendColorHistoryMessage(sessions) {
             document.getElementById("color-history-panel")?.remove();
             if (!sessions.length) return;
@@ -804,6 +852,7 @@
             userData.categoryLabel = session.category_label;
             userData.categoryFocus = "";
             currentColorSessionId = session.id;
+            pendingColorOverview = null;
             chatState = "CHATTING";
             document.getElementById("category-selection").style.display = "none";
             document.getElementById("color-history-panel")?.remove();
@@ -862,42 +911,64 @@
             appendAIMessage(`ลบประวัติ **${escapeHtml(label)}** แล้ว`);
         }
 
+        async function startColorOverview(key) {
+            showTyping(true);
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+
+            try {
+                const { profile } = await getUserContext();
+                const overviewQuestion = getColorOverviewQuestion(key);
+                userData.question = overviewQuestion;
+
+                const data = await requestColorReading(profile, overviewQuestion, "COLOR_OVERVIEW");
+                const reply = data.prediction || data.result || data.message;
+                pendingColorOverview = { question: overviewQuestion, reply, data };
+
+                showTyping(false);
+                chatState = "CHATTING";
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.placeholder = "ถามต่อได้เลย (เช่น ขอสีทางเลือก, ใช้กับเสื้อผ้ายังไง, ควรเลี่ยงสีไหน)...";
+                userInput.focus();
+                appendAIMessage(reply);
+                await loadCategoryHistory(key);
+            } catch (err) {
+                showTyping(false);
+                chatState = "AWAITING_QUESTION";
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.placeholder = "พิมพ์สิ่งที่อยากถามเพิ่มเติมได้เลย...";
+                userInput.focus();
+                appendAIMessage("ขออภัยครับ/ค่ะ ระบบสีมงคลกำลังมีปัญหา กรุณาลองใหม่อีกครั้ง 🌸");
+                console.error(err);
+            }
+        }
+
         function selectCategory(key, label, focus) {
             if (chatState !== "AWAITING_CATEGORY") return;
             userData.categoryKey = key;
             userData.categoryLabel = label;
             userData.categoryFocus = focus;
             currentColorSessionId = null;
+            pendingColorOverview = null;
             colorHistoryCache.clear();
 
             document.getElementById("category-selection").style.display = "none";
             appendUserMessage(`ต้องการทราบ: <b>${label}</b>`);
-            showTyping(true);
 
-            setTimeout(() => {
-                showTyping(false);
+            if (key === "general") {
                 chatState = "AWAITING_QUESTION";
                 userInput.disabled = false;
                 sendBtn.disabled = false;
-
-                const placeholders = {
-                    daily: "บอกวันที่ต้องการทราบสีมงคล (เช่น วันนี้, วันจันทร์, 12 พฤษภาคม)...",
-                    personal: "บอกวันเกิดหรือชื่อของคุณ (เช่น เกิดวันศุกร์, ชื่อมินตรา)...",
-                    wealth: "บอกสิ่งที่อยากเสริมดวง (เช่น อยากให้รวย, ขอสีเสริมการเงิน, สัมภาษณ์งาน, ประชุมสำคัญ)...",
-                    general: "บอกสีที่คุณสนใจหรือชอบ (เช่น สีแดง, เขียวมิ้นท์, น้ำเงินเข้ม, #FF5733)..."
-                };
-                userInput.placeholder = placeholders[key] || "พิมพ์สิ่งที่ต้องการสอบถามได้เลย...";
+                userInput.placeholder = "บอกสีที่คุณสนใจหรือชอบ (เช่น สีแดง, เขียวมิ้นท์, น้ำเงินเข้ม, #FF5733)...";
                 userInput.focus();
-
-                const intros = {
-                    daily: `รับทราบแล้วครับ/ค่ะ ☀️ สีมงคลประจำวันนั้นมีรากฐานมาจากโหราศาสตร์ไทยโบราณ แต่ละวันมีดาวเคราะห์เป็นเจ้าของ และสีของดาวนั้นจะช่วยเสริมพลังงานให้กับผู้ที่สวมใส่<br><br><b>กรุณาบอกวันที่ต้องการทราบสีมงคลได้เลยครับ/ค่ะ</b> (เช่น วันนี้ วันจันทร์ หรือระบุวันที่)`,
-                    personal: `รับทราบแล้วครับ/ค่ะ 🌸 สีถูกโฉลกเฉพาะตัวนั้นขึ้นอยู่กับวันเกิด ชื่อ หรือดวงชะตาส่วนตัวของคุณ ซึ่งจะแตกต่างกันในแต่ละคน<br><br><b>กรุณาบอกวันเกิด หรือชื่อ หรือทั้งสองอย่างได้เลยครับ/ค่ะ</b> เพื่อความแม่นยำในการวิเคราะห์`,
-                    wealth: `รับทราบครับ/ค่ะ 💰 สีมีพลังงานที่ส่งผลต่อโชคลาภและความมั่งคั่ง ตามหลักโหราศาสตร์และฮวงจุ้ย การเลือกใช้สีที่เหมาะสมจะช่วยเสริมบุคลิก ความมั่นใจ และโอกาสด้านการเงิน <br><br><b>กรุณาระบุข้อมูลเพิ่มเติม</b> เช่น สิ่งที่อยากทราบ หรือสิ่งที่ต้องการเสริมดวง เพื่อให้วิเคราะห์ได้แม่นยำยิ่งขึ้น`,
-                    general: `รับทราบแล้วครับ/ค่ะ 🎨 ยินดีช่วยวิเคราะห์สีที่คุณสนใจ! เราจะพิจารณาทั้งในด้าน <b>จิตวิทยาสี</b> ความหมายเชิงสัญลักษณ์ พลังงาน ความเหมาะสมกับโอกาสต่างๆ รวมถึงมุมมองทางโหราศาสตร์และวัฒนธรรม<br><br>สามารถบอกได้หลายแบบ เช่น ✦ ชื่อสี (แดง, ฟ้าเทอร์คอยซ์, เขียวมะกอก) ✦ โค้ดสี (#FF5733) ✦ หรือบรรยายสีที่นึกถึง (สีท้องฟ้าตอนพระอาทิตย์ตก)<br><br><b>บอกสีที่อยากวิเคราะห์ได้เลยครับ/ค่ะ 🌈</b>`
-                };
-                appendAIMessage(intros[key] || `เลือกหมวด <b>${label}</b> แล้วนะครับ/ค่ะ กรุณาบอกรายละเอียดเพิ่มเติมได้เลย`);
+                appendAIMessage("บอกสีที่อยากวิเคราะห์ได้เลยครับ/ค่ะ จะเป็นชื่อสี โค้ดสี หรือคำบรรยายสีก็ได้ 🌈");
                 loadCategoryHistory(key);
-            }, 1000);
+                return;
+            }
+
+            startColorOverview(key);
         }
 
         async function sendMessage() {
@@ -914,10 +985,19 @@
 
                 const { profile } = await getUserContext();
                 const isNewSession = !currentColorSessionId;
+                const shouldPersistPendingOverview = Boolean(pendingColorOverview);
 
                 if (isNewSession) {
                     try {
                         await createColorSession(text);
+                        if (shouldPersistPendingOverview) {
+                            await saveColorMessage("assistant", pendingColorOverview.reply);
+                            await saveColorReading({
+                                ...pendingColorOverview.data,
+                                prediction: pendingColorOverview.reply,
+                            });
+                            pendingColorOverview = null;
+                        }
                     } catch (err) {
                         console.error("Unable to create color session:", err);
                     }
@@ -926,26 +1006,8 @@
                 await saveColorMessage("user", text);
 
                 try {
-                    const res = await fetch("/api/v1/lucky-color", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            name: profile.nickname || profile.full_name || "ผู้ใช้",
-                            full_name: profile.full_name || "",
-                            nickname: profile.nickname || "",
-                            birthdate: profile.birth_date || "",
-                            category: userData.categoryKey,
-                            category_label: userData.categoryLabel,
-                            question: userData.question
-                        })
-                    });
-
-                    const contentType = res.headers.get("content-type") || "";
-                    const data = contentType.includes("application/json")
-                        ? await res.json()
-                        : { detail: await res.text() };
-
-                    if (!res.ok) throw new Error(data.detail || `API error ${res.status}`);
+                    const mode = isNewSession && !shouldPersistPendingOverview ? "COLOR_OVERVIEW" : "LUCKY_COLOR";
+                    const data = await requestColorReading(profile, userData.question, mode);
 
                     showTyping(false);
                     userInput.disabled = false;
@@ -983,8 +1045,9 @@
                                 const domain = userEmail.split("@")[1];
                                 if (domain) document.getElementById("popup-managed").textContent = "Managed by " + domain;
                             }
-                            const { data: profile } = await supabaseClient.from("profiles").select("full_name").eq("id", session.user.id).single();
-                            const displayName = profile?.full_name || userEmail?.split("@")[0] || "USER";
+                            const { data: profile } = await supabaseClient.from("profiles").select("full_name,nickname").eq("id", session.user.id).single();
+                            currentProfile = profile || currentProfile;
+                            const displayName = profile?.full_name || profile?.nickname || userEmail?.split("@")[0] || "USER";
                             document.getElementById("popup-greeting").textContent = "Hi, " + displayName.toUpperCase() + "!";
                             const firstLetter = displayName.charAt(0).toUpperCase();
                             document.getElementById("popup-avatar-letter").textContent = firstLetter;

@@ -123,6 +123,24 @@
         animation: fadeSlideIn 0.35s ease forwards;
       }
 
+      @keyframes shimmer {
+        0% {
+          background-position: -200% center;
+        }
+        100% {
+          background-position: 200% center;
+        }
+      }
+
+      .shimmer-text {
+        background: linear-gradient(90deg, #fecdd3, #fb7185, #ef4444, #f43f5e, #fecdd3);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: shimmer 3s linear infinite;
+      }
+
       /* Markdown Styles */
       .markdown-content p {
         margin-bottom: 0.75rem;
@@ -293,7 +311,7 @@
             </div>
             <div>
               <h1
-                class="text-xl font-bold text-white leading-none tracking-wide"
+                class="text-xl font-bold text-white leading-none tracking-wide shimmer-text"
               >
                 Love Oracle 💖
               </h1>
@@ -626,7 +644,18 @@
         }
       }
 
+      function getUserInitial() {
+        const displayName =
+          currentProfile.full_name ||
+          currentProfile.nickname ||
+          currentUser?.email?.split("@")[0] ||
+          document.querySelector("#avatar-btn span")?.textContent?.trim() ||
+          "U";
+        return displayName.trim().charAt(0).toUpperCase();
+      }
+
       function appendUserMessage(text) {
+        const userInitial = escapeHtml(getUserInitial());
         const msgHTML = `
                 <div class="flex gap-3 justify-end msg-animate">
                     <div class="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] items-end">
@@ -635,7 +664,7 @@
                         </div>
                     </div>
                     <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center shrink-0 overflow-hidden">
-                         <span class="text-[rgb(var(--c-light))] font-bold theme-transition">P</span>
+                         <span class="text-[rgb(var(--c-light))] font-bold theme-transition">${userInitial}</span>
                     </div>
                 </div>
             `;
