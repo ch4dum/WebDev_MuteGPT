@@ -3,14 +3,12 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import google.generativeai as genai
+import swisseph as swe
 
-# Flatlib สำหรับคำนวณดาราศาสตร์
-from flatlib.datetime import Datetime
-from flatlib.geopos import GeoPos
-from flatlib.chart import Chart
+# ใช้ Swiss Ephemeris สำหรับตำแหน่งดาวแบบนิรายนะ และใช้ flatlib const เป็นชื่อดาวเดิมของระบบ
 from flatlib import const
 
 # โหลดค่าจาก .env ในโฟลเดอร์เดียวกับไฟล์นี้ เพื่อให้รันจาก path ไหนก็ได้
@@ -101,31 +99,220 @@ def get_display_name(name: str, full_name: Optional[str] = None, nickname: Optio
 def get_name_context(name: str, full_name: Optional[str] = None, nickname: Optional[str] = None):
     return f"- ชื่อเต็ม: {full_name or 'ไม่ระบุ'}\n- ชื่อเล่น: {nickname or 'ไม่ระบุ'}\n- ชื่อที่ใช้เรียกในคำตอบ: {get_display_name(name, full_name, nickname)}"
 
-def get_current_transits():
-    """คำนวณตำแหน่งดาวปัจจุบันโดยใช้ flatlib"""
+SIGN_TH = {
+    "Aries": "เมษ",
+    "Taurus": "พฤษภ",
+    "Gemini": "เมถุน",
+    "Cancer": "กรกฎ",
+    "Leo": "สิงห์",
+    "Virgo": "กันย์",
+    "Libra": "ตุลย์",
+    "Scorpio": "พิจิก",
+    "Sagittarius": "ธนู",
+    "Capricorn": "มังกร",
+    "Aquarius": "กุมภ์",
+    "Pisces": "มีน",
+}
+
+SIGN_ORDER = [
+    "Aries",
+    "Taurus",
+    "Gemini",
+    "Cancer",
+    "Leo",
+    "Virgo",
+    "Libra",
+    "Scorpio",
+    "Sagittarius",
+    "Capricorn",
+    "Aquarius",
+    "Pisces",
+]
+
+SWE_PLANETS = [
+    (swe.SUN, const.SUN),
+    (swe.MOON, const.MOON),
+    (swe.MARS, const.MARS),
+    (swe.MERCURY, const.MERCURY),
+    (swe.JUPITER, const.JUPITER),
+    (swe.VENUS, const.VENUS),
+    (swe.SATURN, const.SATURN),
+]
+
+PLANET_TH = {
+    const.SUN: "อาทิตย์ (๑)",
+    const.MOON: "จันทร์ (๒)",
+    const.MARS: "อังคาร (๓)",
+    const.MERCURY: "พุธ (๔)",
+    const.JUPITER: "พฤหัส (๕)",
+    const.VENUS: "ศุกร์ (๖)",
+    const.SATURN: "เสาร์ (๗)",
+}
+
+SIGN_RULERS_TH = {
+    "Aries": "อังคาร (๓)",
+    "Taurus": "ศุกร์ (๖)",
+    "Gemini": "พุธ (๔)",
+    "Cancer": "จันทร์ (๒)",
+    "Leo": "อาทิตย์ (๑)",
+    "Virgo": "พุธ (๔)",
+    "Libra": "ศุกร์ (๖)",
+    "Scorpio": "อังคาร (๓)",
+    "Sagittarius": "พฤหัส (๕)",
+    "Capricorn": "เสาร์ (๗)",
+    "Aquarius": "เสาร์ (๗)",
+    "Pisces": "พฤหัส (๕)",
+}
+
+HOUSE_TH = {
+    1: "ตนุ/ตัวตน",
+    2: "กดุมภะ/การเงิน",
+    3: "สหัชชะ/การสื่อสาร",
+    4: "พันธุ/บ้านครอบครัว",
+    5: "ปุตตะ/ความคิดสร้างสรรค์",
+    6: "อริ/งานหนักสุขภาพ",
+    7: "ปัตนิ/คู่ครองหุ้นส่วน",
+    8: "มรณะ/การเปลี่ยนแปลง",
+    9: "ศุภะ/ความรู้ไกล",
+    10: "กัมมะ/การงาน",
+    11: "ลาภะ/เครือข่ายโอกาส",
+    12: "วินาศ/เบื้องหลัง",
+}
+
+def sign_th(sign: str):
+    return SIGN_TH.get(sign, sign or "ไม่ระบุ")
+
+def parse_float(value):
+    try:
+        if value in (None, ""):
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+def parse_chart_datetime(date_str: str, time_str: str):
+    if not date_str:
+        return None
+    normalized_date = date_str.replace("/", "-")
+    normalized_time = normalize_chart_time(time_str)
+    try:
+        local_dt = datetime.strptime(f"{normalized_date} {normalized_time}", "%Y-%m-%d %H:%M")
+    except ValueError:
+        return None
+
+    # User inputs are stored as Thailand local time. Swiss Ephemeris expects UT.
+    return local_dt - timedelta(hours=7)
+
+def julian_day_ut(date_str: str, time_str: str):
+    dt = parse_chart_datetime(date_str, time_str)
+    if dt is None:
+        return None
+    hour = dt.hour + (dt.minute / 60) + (dt.second / 3600)
+    return swe.julday(dt.year, dt.month, dt.day, hour, swe.GREG_CAL)
+
+def lon_to_sign(lon: float):
+    normalized = lon % 360
+    sign_index = int(normalized // 30)
+    sign = SIGN_ORDER[sign_index]
+    signlon = normalized % 30
+    return sign, signlon
+
+def sidereal_position_text(lon: float):
+    sign, signlon = lon_to_sign(lon)
+    return f"{sign_th(sign)} {signlon:.2f}°"
+
+def get_swe_planet_positions(jd, sidereal: bool = False):
+    flags = swe.FLG_SWIEPH | swe.FLG_SPEED
+    if sidereal:
+        swe.set_sid_mode(swe.SIDM_LAHIRI)
+        flags |= swe.FLG_SIDEREAL
+
+    rows = []
+    for swe_id, flatlib_id in SWE_PLANETS:
+        values, _ = swe.calc_ut(jd, swe_id, flags)
+        rows.append(f"{PLANET_TH.get(flatlib_id, flatlib_id)} อยู่ราศี{sidereal_position_text(values[0])}")
+    return rows
+
+def get_whole_sign_houses(asc_lon: float):
+    asc_sign, _ = lon_to_sign(asc_lon)
+    asc_index = SIGN_ORDER.index(asc_sign)
+    houses = []
+    for house_no in range(1, 13):
+        sign = SIGN_ORDER[(asc_index + house_no - 1) % 12]
+        ruler = SIGN_RULERS_TH.get(sign, "ไม่ระบุ")
+        houses.append(f"ภพ {house_no} {HOUSE_TH.get(house_no, '')}: ราศี{sign_th(sign)} เจ้าเรือน {ruler}")
+    return houses
+
+def build_sidereal_chart_data(date_str: str, time_str: str, lat, lon):
+    lat_value = parse_float(lat)
+    lon_value = parse_float(lon)
+    jd = julian_day_ut(date_str, time_str)
+    if jd is None or lat_value is None or lon_value is None:
+        return None
+
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    _, ascmc = swe.houses_ex(jd, lat_value, lon_value, b"W", swe.FLG_SIDEREAL)
+    asc_lon = ascmc[0]
+    mc_lon = ascmc[1]
+    return {
+        "jd": jd,
+        "asc_lon": asc_lon,
+        "mc_lon": mc_lon,
+        "planets": get_swe_planet_positions(jd, sidereal=True),
+        "houses": get_whole_sign_houses(asc_lon),
+    }
+
+def normalize_chart_time(time_str: str):
+    if not time_str:
+        return "12:00"
+    parts = time_str.split(":")
+    if len(parts) >= 2:
+        return f"{parts[0].zfill(2)}:{parts[1].zfill(2)}"
+    return time_str
+
+def get_natal_chart_context(req: ThaiAstrologyRequest):
+    try:
+        chart_data = build_sidereal_chart_data(req.birthdate, req.birthtime, req.birth_lat, req.birth_lon)
+        if chart_data is None:
+            return "ยังคำนวณพื้นดวงจริงไม่ได้ เพราะวัน/เวลา/พิกัดเกิดไม่ครบ ให้ตีความจากข้อมูลเกิดที่มีและระบุข้อจำกัดอย่างสั้น ๆ"
+
+        planet_rows = chart_data["planets"]
+        house_rows = chart_data["houses"]
+
+        sections = [
+            f"ระบบคำนวณพื้นดวงแบบนิรายนะ Lahiri โดยใช้เวลาไทย UTC+7 และพิกัดเกิด",
+            f"ลัคนาคำนวณจากเวลาและพิกัดเกิด: ราศี{sidereal_position_text(chart_data['asc_lon'])}",
+            f"MC/จุดกัมมะโดยประมาณ: ราศี{sidereal_position_text(chart_data['mc_lon'])}",
+            "ดาวเดิม: " + "; ".join(planet_rows),
+        ]
+        if house_rows:
+            sections.append("ภพและดาวเจ้าเรือนโดยประมาณ: " + "; ".join(house_rows))
+        else:
+            sections.append("ระบบยังคำนวณภพไม่ได้ในรอบนี้ ให้ใช้ลัคนาและดาวเดิมเป็นหลัก")
+
+        return "\n".join(sections)
+    except Exception as e:
+        print(f"Natal chart error: {e}")
+        return "คำนวณพื้นดวงจริงไม่สำเร็จในรอบนี้ ให้ตีความจากข้อมูลเกิด/ดาวจรเท่าที่มี และห้ามอ้างลัคนา ภพ หรือเจ้าเรือนแบบฟันธง"
+
+def get_current_transits(date_str: Optional[str] = None, time_str: Optional[str] = None, lat=None, lon=None, sidereal: bool = False):
+    """คำนวณตำแหน่งดาวจรด้วย Swiss Ephemeris"""
     try:
         now = datetime.now()
-        date_str = now.strftime('%Y/%m/%d')
-        time_str = now.strftime('%H:%M')
-        
-        # ตั้งค่าเวลาและพิกัด (กรุงเทพฯ)
-        date = Datetime(date_str, time_str, '+07:00')
-        pos = GeoPos(13.75, 100.50)
-        chart = Chart(date, pos)
-        
-        planets = [
-            const.SUN, const.MOON, const.MARS, const.MERCURY, 
-            const.JUPITER, const.VENUS, const.SATURN
-        ]
-        
-        transit_data = []
-        for p_id in planets:
-            obj = chart.get(p_id)
-            transit_data.append(f"{obj.id}: {obj.sign} ({obj.lon:.2f} deg)")
-            
-        return ", ".join(transit_data)
+        chart_date = date_str or now.strftime("%Y-%m-%d")
+        chart_time = time_str or now.strftime("%H:%M")
+        lat_value = parse_float(lat)
+        lon_value = parse_float(lon)
+        if lat_value is None or lon_value is None:
+            lat_value, lon_value = 13.75, 100.50
+
+        jd = julian_day_ut(chart_date, chart_time)
+        if jd is None:
+            return "ไม่สามารถคำนวณดาวจรได้ เพราะวันที่หรือเวลาไม่ถูกต้อง"
+
+        return "; ".join(get_swe_planet_positions(jd, sidereal=sidereal))
     except Exception as e:
-        print(f"Flatlib error: {e}")
+        print(f"Swiss Ephemeris error: {e}")
         return "ไม่สามารถดึงข้อมูลดวงดาวแบบ Real-time ได้ในขณะนี้"
 
 def get_thai_zodiac(date_str: str):
@@ -379,18 +566,32 @@ PROMPT_LIBRARY = {
         - สถานที่จร: {current_location}
         - พิกัดจร: {current_lat}, {current_lon}
         - ข้อมูลดาวปัจจุบันจากระบบ: {current_planets_data}
+        - ข้อมูลพื้นดวงที่ระบบคำนวณได้: {natal_chart_context}
+
+        ### [Thai Astrology Principles]
+        - วิเคราะห์ตามหลักโหราศาสตร์ไทย/นิรายนะเท่าที่ข้อมูลระบบรองรับ
+        - ให้พิจารณาความสัมพันธ์ระหว่างลัคนา ภพ ราศี ดาวเจ้าเรือน ดาวเดิม และดาวจร เฉพาะส่วนที่อยู่ในข้อมูลพื้นดวงที่ระบบคำนวณได้
+        - หากกล่าวถึงศัพท์โหร ให้แปลสั้น ๆ เช่น ภพ = เรือนชีวิต, เจ้าเรือน = ดาวที่ครองราศีของภพนั้น, ดาว ๕ พฤหัส = ความรู้/ผู้ใหญ่/โอกาส, ดาว ๗ เสาร์ = ภาระ/ความอดทน/ความล่าช้า
+        - ห้ามอ้างตำแหน่งลัคนา ภพ ดาวเจ้าเรือน นวางค์ ฤกษ์ หรือมหาทักษาแบบฟันธง หากข้อมูลนั้นไม่ได้ถูกส่งมาจากระบบคำนวณ
+        - ถ้าข้อมูลพื้นดวงมีลัคนา/ภพ/เจ้าเรือน ให้ใช้ข้อมูลนั้นเป็นฐานในการอ่าน แต่ยังใช้คำว่า "โดยประมาณ" เมื่อเป็นการตีความ
+        - หากข้อมูลเกิด เวลาเกิด หรือพิกัดไม่ครบ ให้แจ้งข้อจำกัดของความแม่นยำอย่างสั้น ๆ
 
         ### [Rules & Tone]
         - ตอบเป็นภาษาไทย โทนโหราจารย์อบอุ่น สุขุม และไม่งมงายเกินจริง
         - ห้ามขึ้นต้นด้วยคำทักทายหรือแนะนำตัว ให้เริ่มที่ผลการอ่านดวงทันที
         - ให้ใช้คำว่า "โดยประมาณ", "มีแนวโน้ม", "จังหวะดวงส่งเสริม" เมื่อต้องตีความ
         - อธิบายศัพท์โหราศาสตร์ให้คนทั่วไปเข้าใจ
-        - ถ้าระบบยังไม่ได้คำนวณลัคนาจริงแบบละเอียด ให้ระบุว่าอ่านจากข้อมูลเกิด/เวลา/สถานที่และดาวจรเป็นหลัก ห้ามอ้างค่าลัคนาแบบฟันธงเกินข้อมูล
+        - ถ้าข้อมูลพื้นดวงที่ระบบส่งมาระบุว่าคำนวณไม่ได้หรือข้อมูลไม่ครบ ให้ระบุข้อจำกัดสั้น ๆ และห้ามอ้างค่าลัคนาแบบฟันธงเกินข้อมูล
+        - หากมีเกณฑ์ท้าทายหรืออุปสรรค ให้เสนอแนวทางรับมืออย่างสร้างสรรค์ ห้ามสร้างความกลัวหรือตื่นตระหนก
+        - ห้ามให้คำแนะนำผิดกฎหมาย อันตราย หรือคำแนะนำทางการแพทย์แทนแพทย์
         - ความยาวไม่เกิน 500 คำ
 
         ### [Output Structure]
         # ภาพรวมพื้นดวง
         (วิเคราะห์บุคลิก แกนชีวิต จุดเด่น จุดควรระวัง จากข้อมูลเกิด)
+
+        # โครงสร้างดวงแบบไทย
+        (พูดถึงลัคนา/ภพ/ดาวเจ้าเรือนเฉพาะเมื่อข้อมูลพอ ถ้าไม่พอให้บอกข้อจำกัดสั้น ๆ)
 
         # จังหวะดาวจร
         (วิเคราะห์ช่วงวันที่จรถามมา เน้นการงาน การเงิน ความรัก สุขภาพหรือโอกาสสำคัญ)
@@ -413,6 +614,14 @@ PROMPT_LIBRARY = {
         - สถานที่จร: {current_location}
         - พิกัดจร: {current_lat}, {current_lon}
         - ข้อมูลดาวปัจจุบันจากระบบ: {current_planets_data}
+        - ข้อมูลพื้นดวงที่ระบบคำนวณได้: {natal_chart_context}
+
+        ### [Thai Astrology Principles]
+        - ตอบจากหลักโหราศาสตร์ไทย/นิรายนะเท่าที่ข้อมูลระบบรองรับ
+        - เชื่อมโยงคำตอบกับข้อมูลพื้นดวงที่ระบบคำนวณได้และดาวจรที่ระบบส่งมา
+        - ถ้าผู้ใช้ถามเชิงลึก ให้พิจารณาความสัมพันธ์ของดาว ราศี ภพ ดาวเจ้าเรือน และดาวจร เฉพาะส่วนที่อยู่ใน context
+        - ห้ามอ้างตำแหน่งลัคนา ภพ ดาวเจ้าเรือน นวางค์ ฤกษ์ หรือมหาทักษาแบบฟันธง หากระบบไม่ได้ส่งค่าคำนวณนั้นมา
+        - หากใช้ศัพท์โหร ให้แปลสั้น ๆ ในประโยคเดียว เพื่อให้คนทั่วไปอ่านเข้าใจ
 
         ### [Rules & Tone]
         - ตอบต่อจาก session เดิมทันที ห้ามทักทายหรือแนะนำตัวซ้ำ
@@ -421,7 +630,9 @@ PROMPT_LIBRARY = {
         - ใช้ Markdown ได้ แต่ไม่ต้องใช้หัวข้อเดิมทุกครั้ง
         - ความยาวประมาณ 180-380 คำ
         - ห้ามฟันธง 100% ให้ใช้ "มีแนวโน้ม", "เกณฑ์", "จังหวะนี้ส่งเสริม/ท้าทาย"
-        - ถ้าคำถามเป็นการตัดสินใจ ให้ช่วยชั่งน้ำหนักพร้อมข้อควรระวัง""",
+        - ถ้าคำถามเป็นการตัดสินใจ ให้ช่วยชั่งน้ำหนักพร้อมข้อควรระวัง
+        - หากพบเกณฑ์ท้าทาย ให้เสนอทางรับมือที่สร้างสรรค์ ไม่สร้างความกลัว
+        - ห้ามให้คำแนะนำผิดกฎหมาย อันตราย หรือคำแนะนำทางการแพทย์แทนแพทย์""",
     },
 }
 
@@ -440,7 +651,7 @@ async def get_horoscope(req: ChatRequest):
         now = datetime.now()
         current_date_str = now.strftime("%d %B %Y")
         
-        # คำนวณตำแหน่งดาวจริงด้วย Flatlib
+        # คำนวณตำแหน่งดาวจรทั่วไปสำหรับหมวดดูดวงหลัก
         current_planets_data = get_current_transits()
         
         prompt_config = PROMPT_LIBRARY.get(req.category, PROMPT_LIBRARY["GENERAL"])
@@ -602,7 +813,14 @@ async def get_thai_astrology(req: ThaiAstrologyRequest):
         now = datetime.now()
         current_date_str = req.current_date or now.strftime("%Y-%m-%d")
         current_time_str = req.current_time or now.strftime("%H:%M")
-        current_planets_data = get_current_transits()
+        natal_chart_context = get_natal_chart_context(req)
+        current_planets_data = get_current_transits(
+            current_date_str,
+            current_time_str,
+            req.current_lat or req.birth_lat,
+            req.current_lon or req.birth_lon,
+            sidereal=True,
+        )
 
         prompt_key = "THAI_ASTROLOGY_OVERVIEW" if req.mode == "THAI_ASTROLOGY_OVERVIEW" else "THAI_ASTROLOGY"
         system_instruction = PROMPT_LIBRARY[prompt_key]["system"].format(
@@ -620,12 +838,25 @@ async def get_thai_astrology(req: ThaiAstrologyRequest):
             current_lat=req.current_lat or "ไม่ระบุ",
             current_lon=req.current_lon or "ไม่ระบุ",
             current_planets_data=current_planets_data,
+            natal_chart_context=natal_chart_context,
         )
 
-        user_prompt = f"""
-ผู้ใช้ถาม/ขอวิเคราะห์ว่า: {req.question}
+        if req.mode == "THAI_ASTROLOGY_OVERVIEW":
+            user_prompt = f"""
+ผู้ใช้ขอเริ่มผูกดวง/อ่านภาพรวมว่า: {req.question}
 
-ช่วยอ่านดวงตามหลักโหราศาสตร์ไทยจากข้อมูลที่ให้มา โดยตอบให้ตรงคำถามและนำไปใช้ได้จริง
+ให้ตอบเป็น Overview ตามโครงสร้างของ THAI_ASTROLOGY_OVERVIEW โดยยึดหลักโหราศาสตร์ไทยเท่าที่ข้อมูลระบบมี
+หากยังไม่มีค่าลัคนา ภพ หรือดาวเจ้าเรือนที่คำนวณจริง ให้แจ้งข้อจำกัดอย่างสั้น ๆ และห้ามอ้างแบบฟันธง
+"""
+        else:
+            user_prompt = f"""
+ผู้ใช้ถามต่อว่า: {req.question}
+
+ให้ตอบคำถามล่าสุดแบบบทสนทนาต่อเนื่องหลัง Overview:
+- ห้ามเล่าพื้นดวงใหม่ทั้งชุด
+- ใช้หลักโหราศาสตร์ไทยเฉพาะจุดที่ช่วยตอบคำถาม
+- ถ้าข้อมูลไม่พอสำหรับลัคนา/ภพ/เจ้าเรือน ให้บอกข้อจำกัดสั้น ๆ
+- ตอบให้ตรงคำถามและนำไปใช้ได้จริง
 """
 
         response = model.generate_content(system_instruction + "\n" + user_prompt)
@@ -635,6 +866,7 @@ async def get_thai_astrology(req: ThaiAstrologyRequest):
             "prediction": response.text,
             "status": "success",
             "transits": current_planets_data,
+            "natal_chart": natal_chart_context,
         }
     except Exception as e:
         error_message = str(e)
