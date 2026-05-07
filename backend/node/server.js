@@ -77,6 +77,44 @@ app.post('/api/v1/numerology', async (req, res) => {
     }
 });
 
+app.post('/api/v1/lucky-color', async (req, res) => {
+    try {
+        const upstream = await fetch(`${PYTHON_API_URL}/api/v1/lucky-color`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(req.body)
+        });
+
+        const payload = await upstream.text();
+        res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(payload);
+    } catch (error) {
+        console.error('Python lucky color API proxy error:', error);
+        res.status(502).json({
+            status: 'error',
+            detail: 'Unable to connect to Python lucky color API'
+        });
+    }
+});
+
+app.post('/api/v1/thai-astrology', async (req, res) => {
+    try {
+        const upstream = await fetch(`${PYTHON_API_URL}/api/v1/thai-astrology`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(req.body)
+        });
+
+        const payload = await upstream.text();
+        res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(payload);
+    } catch (error) {
+        console.error('Python thai astrology API proxy error:', error);
+        res.status(502).json({
+            status: 'error',
+            detail: 'Unable to connect to Python thai astrology API'
+        });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

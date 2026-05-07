@@ -306,17 +306,16 @@
             class="absolute top-[20%] left-[50%] translate-x-[-50%] w-[80%] h-[50%] bg-[rgb(var(--c-primary)/0.1)] rounded-full blur-[180px] mix-blend-screen theme-transition">
         </div>
     </div>
-    </div>
 
     <!-- NAVBAR -->
     <nav
         class="relative z-20 w-full bg-[#0d0208]/80 backdrop-blur-md border-b border-pink-500/25 py-3 shadow-[0_4px_30px_rgba(0,0,0,0.5)] shrink-0">
         <div class="container mx-auto px-4 flex justify-between items-center max-w-4xl">
             <div class="flex items-center gap-4">
-                <a href="main.html"
+                <button id="back-btn" type="button" onclick="handleBackNavigation()"
                     class="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-pink-300 transition-colors">
                     <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                </a>
+                </button>
                 <div class="flex items-center gap-3">
                     <div
                         class="w-10 h-10 rounded-full bg-pink-950/60 border border-pink-500/40 flex items-center justify-center shadow-inner shadow-pink-500/10">
@@ -374,7 +373,7 @@
         <div id="chat-messages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scroll-smooth">
 
             <!-- Welcome Message -->
-            <div class="flex gap-3 msg-animate">
+            <div class="flex gap-3 msg-animate" data-persistent="true">
                 <div
                     class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-rose-800 border border-pink-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(236,72,153,0.35)] mt-1">
                     <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
@@ -521,6 +520,11 @@
 
         let chatState = "AWAITING_CATEGORY";
         let userData = { categoryKey: "", categoryLabel: "", categoryFocus: "", question: "" };
+        let currentUser = null;
+        let currentProfile = {};
+        let currentColorSessionId = null;
+        let hasShownColorSetupWarning = false;
+        const colorHistoryCache = new Map();
 
         const chatMessages = document.getElementById("chat-messages");
         const userInput = document.getElementById("user-input");
@@ -536,6 +540,41 @@
         function showTyping(show) {
             if (show) { typingIndicator.classList.remove("hidden"); scrollToBottom(); }
             else { typingIndicator.classList.add("hidden"); }
+        }
+
+        function resetToCategorySelection() {
+            chatState = "AWAITING_CATEGORY";
+            userData = { categoryKey: "", categoryLabel: "", categoryFocus: "", question: "" };
+            currentColorSessionId = null;
+            colorHistoryCache.clear();
+            showTyping(false);
+
+            Array.from(chatMessages.children).forEach((child) => {
+                if (child.id !== "category-selection" && child.dataset.persistent !== "true") {
+                    child.remove();
+                }
+            });
+
+            const categorySelection = document.getElementById("category-selection");
+            categorySelection.style.display = "flex";
+            categorySelection.classList.remove("msg-animate");
+            void categorySelection.offsetWidth;
+            categorySelection.classList.add("msg-animate");
+
+            userInput.value = "";
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+            userInput.placeholder = "กรุณาเลือกหมวดหมู่สีมงคลด้านบนก่อนนะครับ...";
+            scrollToBottom();
+        }
+
+        function handleBackNavigation() {
+            if (chatState === "AWAITING_CATEGORY") {
+                window.location.href = "main.html";
+                return;
+            }
+
+            resetToCategorySelection();
         }
 
         function appendUserMessage(text) {
@@ -571,11 +610,265 @@
             scrollToBottom();
         }
 
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        async function getUserContext() {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session?.user) return { user: null, profile: {} };
+
+                const { data: profileData } = await supabaseClient
+                    .from("profiles")
+                    .select("*")
+                    .eq("id", session.user.id)
+                    .single();
+
+                currentUser = session.user;
+                currentProfile = profileData || {};
+                return { user: currentUser, profile: currentProfile };
+            } catch (err) {
+                console.error("Unable to load user context:", err);
+                return { user: null, profile: {} };
+            }
+        }
+
+        function isMissingColorTableError(error) {
+            const message = `${error?.code || ""} ${error?.message || ""} ${error?.details || ""}`;
+            return message.includes("42P01") || message.includes("color_sessions") || message.includes("color_messages") || message.includes("color_readings");
+        }
+
+        function showColorSetupWarning(error) {
+            if (hasShownColorSetupWarning || !isMissingColorTableError(error)) return;
+            hasShownColorSetupWarning = true;
+            appendAIMessage(
+                "ระบบประวัติสีมงคลยังไม่พร้อมใช้งาน เพราะยังไม่ได้สร้างตาราง Color ใน Supabase ครับ/ค่ะ ตอนนี้ยังวิเคราะห์สีได้ตามปกติ แต่ประวัติจะยังไม่ถูกบันทึกจนกว่าจะรันไฟล์ `supabase/migrations/202605070004_create_color_tables.sql` ใน Supabase SQL Editor"
+            );
+        }
+
+        function buildColorSessionTitle(categoryLabel, question) {
+            const compact = String(question || "").replace(/\s+/g, " ").trim();
+            return `${categoryLabel}: ${compact.slice(0, 36)}${compact.length > 36 ? "..." : ""}`;
+        }
+
+        async function createColorSession(question) {
+            const { user } = await getUserContext();
+            if (!user) return null;
+
+            const { data, error } = await supabaseClient
+                .from("color_sessions")
+                .insert({
+                    user_id: user.id,
+                    category: userData.categoryKey,
+                    category_label: userData.categoryLabel,
+                    question_input: question,
+                    title: buildColorSessionTitle(userData.categoryLabel, question),
+                })
+                .select("id")
+                .single();
+
+            if (error) {
+                showColorSetupWarning(error);
+                throw error;
+            }
+
+            currentColorSessionId = data.id;
+            return data.id;
+        }
+
+        async function saveColorMessage(role, content) {
+            if (!currentColorSessionId || !currentUser?.id || !content) return;
+
+            const { error } = await supabaseClient
+                .from("color_messages")
+                .insert({
+                    session_id: currentColorSessionId,
+                    user_id: currentUser.id,
+                    role,
+                    content,
+                });
+
+            if (error) {
+                showColorSetupWarning(error);
+                console.error("Unable to save color message:", error);
+            }
+        }
+
+        async function saveColorReading(data) {
+            if (!currentColorSessionId || !currentUser?.id || !data?.prediction) return;
+
+            const { error } = await supabaseClient
+                .from("color_readings")
+                .insert({
+                    session_id: currentColorSessionId,
+                    user_id: currentUser.id,
+                    category: userData.categoryKey,
+                    prediction: data.prediction,
+                });
+
+            if (error) {
+                showColorSetupWarning(error);
+                console.error("Unable to save color reading:", error);
+            }
+        }
+
+        async function touchColorSession() {
+            if (!currentColorSessionId) return;
+            const { error } = await supabaseClient
+                .from("color_sessions")
+                .update({ updated_at: new Date().toISOString() })
+                .eq("id", currentColorSessionId);
+
+            if (error) {
+                showColorSetupWarning(error);
+                console.error("Unable to update color session:", error);
+            }
+        }
+
+        function appendColorHistoryMessage(sessions) {
+            document.getElementById("color-history-panel")?.remove();
+            if (!sessions.length) return;
+
+            const rows = sessions.map((session) => {
+                colorHistoryCache.set(session.id, session);
+                const updatedAt = new Date(session.updated_at).toLocaleDateString("th-TH", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                });
+                return `
+                    <div id="color-history-session-${session.id}" class="flex items-stretch gap-2">
+                        <button onclick="loadColorSession('${session.id}')"
+                            class="flex-1 text-left p-3 rounded-xl border border-pink-500/20 bg-pink-950/25 hover:bg-pink-900/35 transition-colors min-w-0">
+                            <div class="font-semibold text-pink-100 truncate">${escapeHtml(session.title)}</div>
+                            <div class="text-xs text-slate-400 mt-1">${updatedAt}</div>
+                        </button>
+                        <button onclick="deleteColorSession(event, '${session.id}')"
+                            class="w-11 rounded-xl border border-red-500/25 bg-red-950/30 text-red-300 hover:bg-red-900/40 hover:text-red-100 transition-colors flex items-center justify-center"
+                            title="ลบประวัตินี้">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>`;
+            }).join("");
+
+            chatMessages.insertAdjacentHTML("beforeend", `
+                <div id="color-history-panel" class="flex gap-3 msg-animate w-full">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-rose-800 border border-pink-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(236,72,153,0.3)] mt-1">
+                        <i data-lucide="history" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div class="flex flex-col gap-2 max-w-[85%] md:max-w-[75%] w-full">
+                        <span class="text-xs text-pink-300 ml-1">ประวัติเดิม</span>
+                        <div class="bg-[#1a0510]/90 p-4 rounded-2xl rounded-tl-sm border border-pink-500/30 text-slate-200 text-sm shadow-lg">
+                            <div class="font-semibold text-pink-100 mb-3">เคยดูหมวดนี้แล้ว จะดูต่อจากรายการเก่าก็ได้</div>
+                            <div class="space-y-2">${rows}</div>
+                        </div>
+                    </div>
+                </div>`);
+            lucide.createIcons();
+            scrollToBottom();
+        }
+
+        async function loadCategoryHistory(categoryKey) {
+            const { user } = await getUserContext();
+            if (!user) return;
+
+            const { data, error } = await supabaseClient
+                .from("color_sessions")
+                .select("id, category, category_label, question_input, title, updated_at")
+                .eq("user_id", user.id)
+                .eq("category", categoryKey)
+                .order("updated_at", { ascending: false })
+                .limit(5);
+
+            if (error) {
+                showColorSetupWarning(error);
+                console.error("Unable to load color history:", error);
+                return;
+            }
+
+            const previousSessions = (data || []).filter((session) => session.id !== currentColorSessionId);
+            appendColorHistoryMessage(previousSessions);
+        }
+
+        async function loadColorSession(sessionId) {
+            const session = colorHistoryCache.get(sessionId);
+            if (!session) return;
+
+            userData.categoryKey = session.category;
+            userData.categoryLabel = session.category_label;
+            userData.categoryFocus = "";
+            currentColorSessionId = session.id;
+            chatState = "CHATTING";
+            document.getElementById("category-selection").style.display = "none";
+            document.getElementById("color-history-panel")?.remove();
+            userInput.disabled = false;
+            sendBtn.disabled = false;
+            userInput.placeholder = "ถามต่อจากประวัติเดิมได้เลย...";
+
+            appendAIMessage(`โหลดประวัติ **${escapeHtml(session.title)}** แล้ว`);
+
+            const { data, error } = await supabaseClient
+                .from("color_messages")
+                .select("role, content, created_at")
+                .eq("session_id", sessionId)
+                .order("created_at", { ascending: true });
+
+            if (error) {
+                showColorSetupWarning(error);
+                console.error("Unable to load color messages:", error);
+                return;
+            }
+
+            (data || []).forEach((message) => {
+                if (message.role === "user") appendUserMessage(escapeHtml(message.content));
+                else appendAIMessage(message.content);
+            });
+        }
+
+        async function deleteColorSession(event, sessionId) {
+            event?.stopPropagation();
+
+            const session = colorHistoryCache.get(sessionId);
+            const label = session?.title || "ประวัตินี้";
+            const confirmed = window.confirm(`ลบ "${label}" และข้อความทั้งหมดในประวัตินี้ใช่ไหม?`);
+            if (!confirmed) return;
+
+            const { error } = await supabaseClient
+                .from("color_sessions")
+                .delete()
+                .eq("id", sessionId);
+
+            if (error) {
+                showColorSetupWarning(error);
+                appendAIMessage("ลบประวัติไม่สำเร็จ กรุณาลองใหม่อีกครั้งครับ/ค่ะ");
+                console.error("Unable to delete color session:", error);
+                return;
+            }
+
+            colorHistoryCache.delete(sessionId);
+            document.getElementById(`color-history-session-${sessionId}`)?.remove();
+
+            if (currentColorSessionId === sessionId) {
+                currentColorSessionId = null;
+                chatState = "AWAITING_QUESTION";
+            }
+
+            appendAIMessage(`ลบประวัติ **${escapeHtml(label)}** แล้ว`);
+        }
+
         function selectCategory(key, label, focus) {
             if (chatState !== "AWAITING_CATEGORY") return;
             userData.categoryKey = key;
             userData.categoryLabel = label;
             userData.categoryFocus = focus;
+            currentColorSessionId = null;
+            colorHistoryCache.clear();
 
             document.getElementById("category-selection").style.display = "none";
             appendUserMessage(`ต้องการทราบ: <b>${label}</b>`);
@@ -603,6 +896,7 @@
                     general: `รับทราบแล้วครับ/ค่ะ 🎨 ยินดีช่วยวิเคราะห์สีที่คุณสนใจ! เราจะพิจารณาทั้งในด้าน <b>จิตวิทยาสี</b> ความหมายเชิงสัญลักษณ์ พลังงาน ความเหมาะสมกับโอกาสต่างๆ รวมถึงมุมมองทางโหราศาสตร์และวัฒนธรรม<br><br>สามารถบอกได้หลายแบบ เช่น ✦ ชื่อสี (แดง, ฟ้าเทอร์คอยซ์, เขียวมะกอก) ✦ โค้ดสี (#FF5733) ✦ หรือบรรยายสีที่นึกถึง (สีท้องฟ้าตอนพระอาทิตย์ตก)<br><br><b>บอกสีที่อยากวิเคราะห์ได้เลยครับ/ค่ะ 🌈</b>`
                 };
                 appendAIMessage(intros[key] || `เลือกหมวด <b>${label}</b> แล้วนะครับ/ค่ะ กรุณาบอกรายละเอียดเพิ่มเติมได้เลย`);
+                loadCategoryHistory(key);
             }, 1000);
         }
 
@@ -618,22 +912,27 @@
                 showTyping(true);
                 userInput.disabled = true;
 
-                let profile = {};
-                try {
-                    const { data: { session } } = await supabaseClient.auth.getSession();
-                    if (session && session.user) {
-                        const { data: profileData } = await supabaseClient
-                            .from("profiles").select("*").eq("id", session.user.id).single();
-                        if (profileData) profile = profileData;
+                const { profile } = await getUserContext();
+                const isNewSession = !currentColorSessionId;
+
+                if (isNewSession) {
+                    try {
+                        await createColorSession(text);
+                    } catch (err) {
+                        console.error("Unable to create color session:", err);
                     }
-                } catch (e) { }
+                }
+
+                await saveColorMessage("user", text);
 
                 try {
                     const res = await fetch("/api/v1/lucky-color", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            name: profile.full_name || profile.nickname || "ผู้ใช้",
+                            name: profile.nickname || profile.full_name || "ผู้ใช้",
+                            full_name: profile.full_name || "",
+                            nickname: profile.nickname || "",
                             birthdate: profile.birth_date || "",
                             category: userData.categoryKey,
                             category_label: userData.categoryLabel,
@@ -641,7 +940,10 @@
                         })
                     });
 
-                    const data = await res.json();
+                    const contentType = res.headers.get("content-type") || "";
+                    const data = contentType.includes("application/json")
+                        ? await res.json()
+                        : { detail: await res.text() };
 
                     if (!res.ok) throw new Error(data.detail || `API error ${res.status}`);
 
@@ -650,7 +952,11 @@
                     userInput.placeholder = "ถามต่อได้เลย (เช่น ขอสีทางเลือก, อยากรู้สีอื่น, ใส่กับอะไรได้บ้าง)...";
                     userInput.focus();
                     chatState = "CHATTING";
-                    appendAIMessage(data.prediction || data.result || data.message);
+                    const reply = data.prediction || data.result || data.message;
+                    appendAIMessage(reply);
+                    await saveColorMessage("assistant", reply);
+                    await saveColorReading({ ...data, prediction: reply });
+                    await touchColorSession();
 
                 } catch (err) {
                     showTyping(false);

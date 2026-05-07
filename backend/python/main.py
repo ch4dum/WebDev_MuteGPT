@@ -27,7 +27,7 @@ app.add_middleware(
 
 # ตั้งค่า Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel('gemini-2.5-flash-lite')
+model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
 
 class ChatRequest(BaseModel):
     name: str = "ลูกดวง"
@@ -50,6 +50,32 @@ class NumerologyRequest(BaseModel):
     number_input: str
     question: str = ""
     mode: str = "NUMEROLOGY"
+
+class ColorRequest(BaseModel):
+    name: str = "ผู้ใช้"
+    full_name: Optional[str] = None
+    nickname: Optional[str] = None
+    birthdate: str = ""
+    category: str = "general"
+    category_label: str = "วิเคราะห์สีทั่วไป"
+    question: str
+
+class ThaiAstrologyRequest(BaseModel):
+    name: str = "ผู้ใช้"
+    full_name: Optional[str] = None
+    nickname: Optional[str] = None
+    birthdate: str
+    birthtime: str = "06:00"
+    birth_location: str = "กรุงเทพมหานคร"
+    birth_lat: Optional[str] = None
+    birth_lon: Optional[str] = None
+    current_date: str = ""
+    current_time: str = ""
+    current_location: str = "กรุงเทพมหานคร"
+    current_lat: Optional[str] = None
+    current_lon: Optional[str] = None
+    question: str
+    mode: str = "THAI_ASTROLOGY"
 
 def calculate_root_number(value: str):
     digits = [int(ch) for ch in value if ch.isdigit()]
@@ -271,7 +297,99 @@ PROMPT_LIBRARY = {
 - ถ้าผู้ใช้ถามต่อ ให้ตอบต่อจากเลขเดิม ไม่ต้องสรุป overview ซ้ำ
 - ถ้าผู้ใช้ขอเลขทางเลือก ให้เสนอแนวเลขที่เหมาะกับหมวด {category_label}
 - ถ้าผู้ใช้ถามว่าดีไหม ให้ตอบข้อดี/ข้อควรระวังแบบกระชับ""",
-    }
+    },
+    "LUCKY_COLOR": {
+        "system": """คุณคือ "นักพยากรณ์สีมงคล AI" แห่ง MuteGPT ผู้เชี่ยวชาญด้านสีมงคล โหราศาสตร์ไทย จิตวิทยาสี และการใช้สีในชีวิตประจำวัน
+
+### [Context & Inputs]
+- ผู้รับคำทำนาย: {name}
+{name_context}
+- วันเกิด: {birthdate}
+- ราศีโดยประมาณ: {zodiac}
+- วันที่ปัจจุบัน: {current_date}
+- หมวดวิเคราะห์: {category_label} ({category})
+
+### [Rules & Tone]
+- ตอบเป็นภาษาไทย อ่านง่าย อบอุ่น และมีเหตุผล ไม่งมงายเกินจริง
+- เรียกผู้ใช้ด้วยชื่อ "{name}" อย่างเป็นธรรมชาติ
+- ห้ามขึ้นต้นด้วยคำทักทายหรือแนะนำตัว ให้เริ่มที่คำตอบทันที
+- ถ้าข้อมูลวันเกิดไม่ระบุ ให้บอกว่าอ่านจากคำถาม/เจตนาของผู้ใช้เป็นหลัก
+- ใช้ Markdown ได้ เช่นหัวข้อสั้น ๆ, bullet point, ตัวหนา
+- ความยาวประมาณ 180-360 คำ
+- ห้ามฟันธง 100% ให้ใช้คำว่า "มีแนวโน้ม", "เหมาะกับพลังงาน", "ช่วยเสริมภาพลักษณ์/ความมั่นใจ"
+
+### [Category Guidance]
+- daily: แนะนำสีมงคลตามวัน/บริบทที่ถาม แยกสีเสริมงาน เงิน ความรัก และสีที่ควรเลี่ยงถ้าเหมาะสม
+- personal: วิเคราะห์สีที่ถูกโฉลกกับวันเกิด ชื่อ หรือพลังส่วนตัวของผู้ใช้
+- wealth: เน้นสีเสริมโชคลาภ การเงิน ความน่าเชื่อถือ การเจรจา และความสำเร็จ
+- general: วิเคราะห์สีที่ผู้ใช้ระบุ ทั้งความหมาย จิตวิทยาสี โอกาสที่เหมาะ และข้อควรระวัง
+
+### [Output Structure]
+ปรับหัวข้อให้เหมาะกับคำถามล่าสุด ไม่ต้องใช้หัวข้อเดิมซ้ำทุกครั้ง แต่ควรมี:
+- สีที่แนะนำหรือสีที่วิเคราะห์
+- เหตุผลเชิงพลังงาน/จิตวิทยา/บริบทการใช้งาน
+- วิธีนำไปใช้จริง เช่น เสื้อผ้า เครื่องประดับ ของใช้ พื้นหลัง หรือคู่สี
+- สีทางเลือก 2-3 สีเมื่อเหมาะสม""",
+    },
+    "THAI_ASTROLOGY_OVERVIEW": {
+        "system": """คุณคือ "โหราจารย์ AI" แห่ง MuteGPT ผู้เชี่ยวชาญโหราศาสตร์ไทย ภาคคำนวณ ลัคนา เรือนชะตา ดาวจร และการให้คำปรึกษาชีวิตอย่างมีเหตุผล
+
+### [Context & Inputs]
+- ผู้รับคำทำนาย: {name}
+{name_context}
+- วันเกิด: {birthdate}
+- เวลาเกิด: {birthtime}
+- สถานที่เกิด: {birth_location}
+- พิกัดเกิด: {birth_lat}, {birth_lon}
+- ราศีโดยประมาณจากวันเกิด: {zodiac}
+- วัน/เวลาจรที่ต้องการทำนาย: {current_date} {current_time}
+- สถานที่จร: {current_location}
+- พิกัดจร: {current_lat}, {current_lon}
+- ข้อมูลดาวปัจจุบันจากระบบ: {current_planets_data}
+
+### [Rules & Tone]
+- ตอบเป็นภาษาไทย โทนโหราจารย์อบอุ่น สุขุม และไม่งมงายเกินจริง
+- ห้ามขึ้นต้นด้วยคำทักทายหรือแนะนำตัว ให้เริ่มที่ผลการอ่านดวงทันที
+- ให้ใช้คำว่า "โดยประมาณ", "มีแนวโน้ม", "จังหวะดวงส่งเสริม" เมื่อต้องตีความ
+- อธิบายศัพท์โหราศาสตร์ให้คนทั่วไปเข้าใจ
+- ถ้าระบบยังไม่ได้คำนวณลัคนาจริงแบบละเอียด ให้ระบุว่าอ่านจากข้อมูลเกิด/เวลา/สถานที่และดาวจรเป็นหลัก ห้ามอ้างค่าลัคนาแบบฟันธงเกินข้อมูล
+- ความยาวไม่เกิน 500 คำ
+
+### [Output Structure]
+# ภาพรวมพื้นดวง
+(วิเคราะห์บุคลิก แกนชีวิต จุดเด่น จุดควรระวัง จากข้อมูลเกิด)
+
+# จังหวะดาวจร
+(วิเคราะห์ช่วงวันที่จรถามมา เน้นการงาน การเงิน ความรัก สุขภาพหรือโอกาสสำคัญ)
+
+# คำแนะนำ
+(คำแนะนำที่นำไปใช้ได้จริงและมีเหตุผล)""",
+    },
+    "THAI_ASTROLOGY": {
+        "system": """คุณคือ "โหราจารย์ AI" แห่ง MuteGPT ผู้เชี่ยวชาญโหราศาสตร์ไทย ตอบคำถามต่อเนื่องจากพื้นดวงเดิม
+
+### [Context & Inputs]
+- ผู้รับคำทำนาย: {name}
+{name_context}
+- วันเกิด: {birthdate}
+- เวลาเกิด: {birthtime}
+- สถานที่เกิด: {birth_location}
+- พิกัดเกิด: {birth_lat}, {birth_lon}
+- ราศีโดยประมาณจากวันเกิด: {zodiac}
+- วัน/เวลาจร: {current_date} {current_time}
+- สถานที่จร: {current_location}
+- พิกัดจร: {current_lat}, {current_lon}
+- ข้อมูลดาวปัจจุบันจากระบบ: {current_planets_data}
+
+### [Rules & Tone]
+- ตอบต่อจาก session เดิมทันที ห้ามทักทายหรือแนะนำตัวซ้ำ
+- ตอบคำถามล่าสุดให้ตรงประเด็น โดยโยงกับข้อมูลเกิด เวลาเกิด สถานที่ และดาวจร
+- ใช้ภาษาไทยที่เข้าใจง่าย อบอุ่น และมีเหตุผล
+- ใช้ Markdown ได้ แต่ไม่ต้องใช้หัวข้อเดิมทุกครั้ง
+- ความยาวประมาณ 180-380 คำ
+- ห้ามฟันธง 100% ให้ใช้ "มีแนวโน้ม", "เกณฑ์", "จังหวะนี้ส่งเสริม/ท้าทาย"
+- ถ้าคำถามเป็นการตัดสินใจ ให้ช่วยชั่งน้ำหนักพร้อมข้อควรระวัง""",
+    },
 }
 
 @app.post("/api/v1/horoscope")
@@ -372,6 +490,109 @@ async def get_numerology(req: NumerologyRequest):
     except Exception as e:
         error_message = str(e)
         print(f"Numerology error: {error_message}")
+
+        if "429" in error_message or "quota" in error_message.lower():
+            raise HTTPException(
+                status_code=429,
+                detail="Gemini API quota exceeded. Please wait and try again later, or check the Gemini API plan and billing settings."
+            )
+
+        raise HTTPException(status_code=500, detail=error_message)
+
+@app.post("/api/v1/lucky-color")
+async def get_lucky_color(req: ColorRequest):
+    try:
+        display_name = get_display_name(req.name, req.full_name, req.nickname)
+        name_context = get_name_context(req.name, req.full_name, req.nickname)
+        birthdate_text = req.birthdate or "ไม่ระบุ"
+        zodiac = get_thai_zodiac(req.birthdate) if req.birthdate else "ไม่ระบุ"
+
+        now = datetime.now()
+        current_date_str = now.strftime("%d %B %Y")
+
+        system_instruction = PROMPT_LIBRARY["LUCKY_COLOR"]["system"].format(
+            name=display_name,
+            name_context=name_context,
+            birthdate=birthdate_text,
+            zodiac=zodiac,
+            current_date=current_date_str,
+            category=req.category,
+            category_label=req.category_label,
+        )
+
+        user_prompt = f"""
+ผู้ใช้ถาม/ให้ข้อมูลว่า: {req.question}
+
+ช่วยวิเคราะห์สีให้ตรงกับหมวด {req.category_label} โดยตอบเป็นคำแนะนำที่นำไปใช้ได้จริง
+"""
+
+        response = model.generate_content(system_instruction + "\n" + user_prompt)
+
+        return {
+            "prediction": response.text,
+            "status": "success",
+            "category": req.category,
+            "category_label": req.category_label,
+            "zodiac": zodiac,
+        }
+    except Exception as e:
+        error_message = str(e)
+        print(f"Lucky color error: {error_message}")
+
+        if "429" in error_message or "quota" in error_message.lower():
+            raise HTTPException(
+                status_code=429,
+                detail="Gemini API quota exceeded. Please wait and try again later, or check the Gemini API plan and billing settings."
+            )
+
+        raise HTTPException(status_code=500, detail=error_message)
+
+@app.post("/api/v1/thai-astrology")
+async def get_thai_astrology(req: ThaiAstrologyRequest):
+    try:
+        display_name = get_display_name(req.name, req.full_name, req.nickname)
+        name_context = get_name_context(req.name, req.full_name, req.nickname)
+        zodiac = get_thai_zodiac(req.birthdate)
+        now = datetime.now()
+        current_date_str = req.current_date or now.strftime("%Y-%m-%d")
+        current_time_str = req.current_time or now.strftime("%H:%M")
+        current_planets_data = get_current_transits()
+
+        prompt_key = "THAI_ASTROLOGY_OVERVIEW" if req.mode == "THAI_ASTROLOGY_OVERVIEW" else "THAI_ASTROLOGY"
+        system_instruction = PROMPT_LIBRARY[prompt_key]["system"].format(
+            name=display_name,
+            name_context=name_context,
+            birthdate=req.birthdate,
+            birthtime=req.birthtime,
+            birth_location=req.birth_location,
+            birth_lat=req.birth_lat or "ไม่ระบุ",
+            birth_lon=req.birth_lon or "ไม่ระบุ",
+            zodiac=zodiac,
+            current_date=current_date_str,
+            current_time=current_time_str,
+            current_location=req.current_location,
+            current_lat=req.current_lat or "ไม่ระบุ",
+            current_lon=req.current_lon or "ไม่ระบุ",
+            current_planets_data=current_planets_data,
+        )
+
+        user_prompt = f"""
+ผู้ใช้ถาม/ขอวิเคราะห์ว่า: {req.question}
+
+ช่วยอ่านดวงตามหลักโหราศาสตร์ไทยจากข้อมูลที่ให้มา โดยตอบให้ตรงคำถามและนำไปใช้ได้จริง
+"""
+
+        response = model.generate_content(system_instruction + "\n" + user_prompt)
+
+        return {
+            "zodiac": zodiac,
+            "prediction": response.text,
+            "status": "success",
+            "transits": current_planets_data,
+        }
+    except Exception as e:
+        error_message = str(e)
+        print(f"Thai astrology error: {error_message}")
 
         if "429" in error_message or "quota" in error_message.lower():
             raise HTTPException(
