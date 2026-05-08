@@ -195,10 +195,75 @@
                     </div>
                 </div>
             </div>
-            <!-- ไอคอนโปรไฟล์ -->
-            <div id="avatar-btn" class="w-10 h-10 shrink-0 rounded-full bg-[rgb(var(--c-dark)/0.5)] border border-[rgb(var(--c-primary)/0.3)] flex items-center justify-center shadow-[0_0_15px_rgb(var(--c-primary)/0.18)]">
-                <span class="text-[rgb(var(--c-light))] text-sm font-bold theme-transition">P</span>
+
+        <!-- ปุ่มออกจากระบบ + ไอคอนโปรไฟล์ -->
+        <div class="flex items-center gap-3 relative">
+            <div
+                id="avatar-btn"
+                class="w-10 h-10 rounded-full flex items-center justify-center border cursor-pointer hover:scale-105 transition-all bg-[rgb(var(--c-dark)/0.5)] border-[rgb(var(--c-primary)/0.3)] shadow-[0_0_15px_rgb(var(--c-primary)/0.2)] theme-transition"
+            >
+                <i
+                    data-lucide="user"
+                    class="w-5 h-5 text-[rgb(var(--c-accent))] theme-transition"
+                ></i>
+              </div>
+
+            <!-- Account Popup -->
+            <div
+            id="account-popup"
+            class="absolute top-[calc(100%+10px)] right-0 bg-[#0a0514]/95 backdrop-blur-xl rounded-3xl w-[340px] shadow-[0_10px_40px_rgba(0,0,0,0.8),0_0_20px_rgb(var(--c-primary)/0.2)] border border-[rgb(var(--c-primary)/0.3)] z-[100] overflow-hidden theme-transition"
+            style="
+              display: none;
+              font-family: &quot;Inter&quot;, &quot;Prompt&quot;, sans-serif;
+            "
+          >
+            <div class="p-6 text-center relative">
+              <button
+                id="close-popup"
+                class="absolute top-4 right-4 bg-transparent border-none text-slate-400 hover:text-[rgb(var(--c-accent))] cursor-pointer transition-colors theme-transition"
+              >
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+              <div
+                id="popup-email"
+                class="text-slate-50 text-[0.95rem] font-medium mb-1 break-all"
+              >
+                loading...
+              </div>
+              <div id="popup-managed" class="text-slate-400 text-xs mb-6"></div>
+
+              <div
+                id="popup-avatar-large"
+                class="w-20 h-20 rounded-full bg-gradient-to-br from-[rgb(var(--c-dark)/0.8)] to-[rgb(var(--c-primary)/0.5)] border border-[rgb(var(--c-accent)/0.4)] text-[rgb(var(--c-light))] flex items-center justify-center text-4xl mx-auto mb-4 relative shadow-[0_0_15px_rgb(var(--c-primary)/0.4)] theme-transition"
+              >
+                <span id="popup-avatar-letter"></span>
+                <div
+                  class="absolute -bottom-0.5 -right-0.5 bg-[#0a0514] border border-[rgb(var(--c-primary)/0.5)] rounded-full p-1.5 flex theme-transition"
+                >
+                  <i
+                    data-lucide="camera"
+                    class="w-3.5 h-3.5 text-[rgb(var(--c-light))] theme-transition"
+                  ></i>
+                </div>
+              </div>
+
+              <div
+                id="popup-greeting"
+                class="bg-gradient-to-r from-[rgb(var(--c-light))] to-[rgb(var(--c-accent))] bg-clip-text text-transparent text-xl font-bold mb-6 theme-transition"
+              >
+                Hi!
+              </div>
+
+              <button
+                onclick="handleLogout()"
+                class="bg-gradient-to-r from-red-500 to-red-800 text-white py-2 px-5 rounded-full border-none text-sm font-semibold cursor-pointer transition-all shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)] hover:-translate-y-[1px] inline-flex items-center justify-center gap-2"
+              >
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+                ออกจากระบบ
+              </button>
             </div>
+          </div>
+        </div>
         </div>
     </nav>
 
@@ -1359,6 +1424,53 @@
                 loadHoraHistory();
             }
         }, 100);
+
+        // Profile Popup
+        async function loadProfileForPopup() {
+            const checkClient = setInterval(async () => {
+            if (typeof supabaseClient !== "undefined" && supabaseClient) {
+                clearInterval(checkClient);
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (session && session.user) {
+                        const userEmail = session.user.email;
+                        if (userEmail) {
+                            document.getElementById("popup-email").textContent = userEmail;
+                            const domain = userEmail.split("@")[1];
+                            if (domain) document.getElementById("popup-managed").textContent = "Managed by " + domain;
+                }
+                const { data: profile } = await supabaseClient.from("profiles").select("full_name,nickname").eq("id", session.user.id).single();
+                currentProfile = profile || currentProfile;
+                const displayName = profile?.full_name || profile?.nickname || userEmail?.split("@")[0] || "USER";
+                document.getElementById("popup-greeting").textContent = "Hi, " + displayName.toUpperCase() + "!";
+                const firstLetter = displayName.charAt(0).toUpperCase();
+                document.getElementById("popup-avatar-letter").textContent = firstLetter;
+                document.getElementById("avatar-btn").innerHTML = `<span class="text-blue-400 font-bold text-lg">${firstLetter}</span>`;
+              }
+            } catch (err) { console.error(err); }
+          }
+        }, 100);
+      }
+      loadProfileForPopup();
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const avatarBtn = document.getElementById("avatar-btn");
+        const accountPopup = document.getElementById("account-popup");
+        const closePopup = document.getElementById("close-popup");
+
+        if (avatarBtn && accountPopup) {
+          avatarBtn.addEventListener("click", () => {
+            accountPopup.style.display = accountPopup.style.display === "none" ? "block" : "none";
+          });
+          closePopup?.addEventListener("click", () => { accountPopup.style.display = "none"; });
+          document.addEventListener("click", (e) => {
+            if (!avatarBtn.contains(e.target) && !accountPopup.contains(e.target)) {
+              accountPopup.style.display = "none";
+            }
+          });
+        }
+      });
+
     </script>
 </body>
 </html>
