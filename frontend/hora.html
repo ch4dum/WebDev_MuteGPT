@@ -415,13 +415,13 @@
                     type="text"
                     id="user-input"
                     placeholder="สอบถามดวงชะตาเพิ่มเติมจากลัคนาของคุณ..." 
-                    class="w-full bg-[#120a05] border border-slate-700 focus:border-[rgb(var(--c-primary))] text-white rounded-full py-3 px-6 pr-14 outline-none transition-all placeholder:text-slate-600 shadow-inner"
+                    class="w-full bg-[#120a05] border border-slate-700 focus:border-[rgb(var(--c-primary))] text-white rounded-full py-3 px-6 pr-14 outline-none transition-all placeholder:text-slate-600 shadow-inner disabled:opacity-50 disabled:cursor-not-allowed"
                     onkeydown="if(event.key === 'Enter') { sendChatMessage(); }"
                 >
                 <button 
                     id="send-btn"
                     onclick="sendChatMessage()"
-                    class="absolute right-2 top-1.5 w-10 h-10 rounded-full bg-gradient-to-r from-[rgb(var(--c-primary))] to-[rgb(var(--c-secondary))] flex items-center justify-center text-white hover:scale-105 transition-all duration-500 shadow-[0_0_10px_rgb(var(--c-accent)/0.4)] theme-transition"
+                    class="absolute right-2 top-1.5 w-10 h-10 rounded-full bg-gradient-to-r from-[rgb(var(--c-primary))] to-[rgb(var(--c-secondary))] flex items-center justify-center text-white hover:scale-105 transition-all duration-500 shadow-[0_0_10px_rgb(var(--c-accent)/0.4)] theme-transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                     <i data-lucide="send" class="w-4 h-4 ml-1"></i>
                 </button>
@@ -1321,6 +1321,11 @@
             const summaryMsg = `ขอผูกดวงครับ/ค่ะ\nเกิดวันที่ ${userAstroData.bDate} เวลา ${userAstroData.bTime} น. ที่ ${userAstroData.bLoc}`;
             appendUserMessage(formatUserText(summaryMsg));
 
+            inputArea.classList.remove('hidden');
+            userInput.value = '';
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+            userInput.placeholder = 'กำลังผูกดวงชะตา รอสักครู่นะครับ...';
             showTyping(true);
 
             try {
@@ -1353,12 +1358,14 @@
                 inputArea.classList.remove('hidden');
                 userInput.disabled = false;
                 sendBtn.disabled = false;
+                userInput.placeholder = 'สอบถามดวงชะตาเพิ่มเติมจากลัคนาของคุณ...';
                 userInput.focus();
             } catch (err) {
                 showTyping(false);
                 inputArea.classList.remove('hidden');
                 userInput.disabled = false;
                 sendBtn.disabled = false;
+                userInput.placeholder = 'สอบถามดวงชะตาเพิ่มเติมจากลัคนาของคุณ...';
                 userInput.focus();
                 chatState = 'CHATTING';
                 appendAIMessage('ขออภัยครับ ระบบผูกดวงกำลังมีปัญหา ลองถามหรือส่งข้อมูลอีกครั้งได้เลยครับ');
@@ -1445,7 +1452,7 @@
                 document.getElementById("popup-greeting").textContent = "Hi, " + displayName.toUpperCase() + "!";
                 const firstLetter = displayName.charAt(0).toUpperCase();
                 document.getElementById("popup-avatar-letter").textContent = firstLetter;
-                document.getElementById("avatar-btn").innerHTML = `<span class="text-blue-400 font-bold text-lg">${firstLetter}</span>`;
+                document.getElementById("avatar-btn").innerHTML = `<span class="text-[rgb(var(--c-light))] font-bold text-lg theme-transition">${firstLetter}</span>`;
               }
             } catch (err) { console.error(err); }
           }
