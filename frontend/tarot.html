@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ไพ่ยิปซีพยากรณ์ - MuteGPT</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ธีมสีม่วงลึกลับ (Mystic Purple) */
+        :root {
+            --c-primary: 168 85 247;   /* purple-500 */
+            --c-secondary: 147 51 234; /* purple-600 */
+            --c-accent: 216 180 254;   /* purple-300 */
+            --c-light: 243 232 255;    /* purple-100 */
+            --c-dark: 88 28 135;       /* purple-900 */
+        }
+
+        body { font-family: 'Prompt', sans-serif; }
+        
+        /* Scrollbar อิงตามสีธีม */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgb(var(--c-primary)); border-radius: 4px; transition: background 0.8s ease; }
+        ::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-secondary)); }
+
+        @keyframes spin-slow {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .animate-spin-slow { animation: spin-slow 180s linear infinite; }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: translateY(15px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .msg-animate { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        .typing-dot { animation: typing 1.4s infinite ease-in-out both; }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* ---- สไตล์สำหรับไพ่ยิปซี (3D Flip) ---- */
+        .tarot-card-container { perspective: 1000px; }
+        .tarot-card {
+            position: relative;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+        .tarot-card.flipped { transform: rotateY(180deg); }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .card-back {
+            background: linear-gradient(135deg, #2e1065, #4c1d95);
+            background-image: radial-gradient(circle at center, rgba(255,255,255,0.15) 1px, transparent 1px);
+            background-size: 8px 8px;
+            border: 1px solid rgba(168, 85, 247, 0.5);
+        }
+        .card-front {
+            background-color: #0f172a;
+            transform: rotateY(180deg);
+            border: 2px solid #fbbf24;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
+        }
+        .card-front img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* ---------------------------------------------------- */
+        /* 1. สไตล์สำหรับการปูไพ่แบบวงกลม (Wheel Spread) */
+        /* ---------------------------------------------------- */
+        .deck-card-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 35px;
+            height: 55px;
+            margin-top: -27.5px;
+            margin-left: -17.5px;
+            transform: rotate(var(--target-angle)) translateY(-130px);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s, box-shadow 0.2s;
+            transform-origin: center center;
+            z-index: 10;
+        }
+        @media (min-width: 768px) {
+            .deck-card-circle {
+                width: 50px;
+                height: 80px;
+                margin-top: -40px;
+                margin-left: -25px;
+                transform: rotate(var(--target-angle)) translateY(-240px);
+            }
+        }
+        .deck-card-circle:hover {
+            transform: rotate(var(--target-angle)) translateY(-150px) scale(1.2);
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.8);
+            border-color: #fbbf24;
+            z-index: 50 !important;
+        }
+        @media (min-width: 768px) {
+            .deck-card-circle:hover {
+                transform: rotate(var(--target-angle)) translateY(-270px) scale(1.25);
+            }
+        }
+
+        /* ---------------------------------------------------- */
+        /* 2. สไตล์สำหรับการปูไพ่แบบครึ่งวงกลม (Fan Spread) */
+        /* ---------------------------------------------------- */
+        .fan-wrapper {
+            position: relative;
+            width: 100%;
+            height: 180px;
+            overflow: visible;
+            margin-top: 10px;
+        }
+        @media (min-width: 768px) {
+            .fan-wrapper { height: 260px; }
+        }
+        .deck-card-fan {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            width: 40px;
+            height: 60px;
+            margin-left: -20px;
+            transform-origin: center 200px;
+            transform: rotate(var(--target-angle));
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
+            z-index: 10;
+        }
+        .deck-card-fan:hover {
+            transform: rotate(var(--target-angle)) translateY(-15px) scale(1.1);
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.8);
+            border-color: #fbbf24;
+            z-index: 100 !important;
+        }
+        @media (min-width: 768px) {
+            .deck-card-fan {
+                top: 20px;
+                width: 55px;
+                height: 85px;
+                margin-left: -27.5px;
+                transform-origin: center 300px;
+            }
+            .deck-card-fan:hover {
+                transform: rotate(var(--target-angle)) translateY(-25px) scale(1.1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#05030a] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-purple-500/30">
+
+    <!-- --- BACKGROUND (ใช้ background.jpg เหมือนหน้าอื่นๆ) --- -->
+    <div
+      class="fixed inset-0 z-0 pointer-events-none overflow-hidden"
+      style="
+        background:
+          linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
+          url(&quot;assets/background.jpg&quot;) no-repeat center center fixed;
+        background-size: cover;
+      "
+    >
+      <div
+        class="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-red-950/20 rounded-full blur-[150px] mix-blend-screen"
+      ></div>
+      <div
+        class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-rose-900/15 rounded-full blur-[120px] mix-blend-screen"
+      ></div>
+      <div
+        class="absolute inset-0 opacity-[0.03]"
+        style="
+          background-image: radial-gradient(
+            circle at center,
+            #ffffff 1px,
+            transparent 1px
+          );
+          background-size: 30px 30px;
+        "
+      ></div>
+    </div>
+
+    <!-- --- BACKGROUND --- -->
+        <div class="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-purple-900/30 rounded-full blur-[150px] mix-blend-screen"></div>
+        <div class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-fuchsia-900/20 rounded-full blur-[120px] mix-blend-screen"></div>
+        <div class="absolute top-[20%] left-[50%] translate-x-[-50%] w-[80%] h-[50%] bg-indigo-900/20 rounded-full blur-[180px] mix-blend-screen"></div>
+
+        <div class="absolute top-1/2 left-1/2 animate-spin-slow w-[800px] h-[800px] md:w-[1200px] md:h-[1200px] opacity-[0.05] pointer-events-none">
+            <svg viewBox="0 0 100 100" class="w-full h-full text-purple-200">
+                <circle cx="50" cy="50" r="49" fill="none" stroke="currentColor" stroke-width="0.2" stroke-dasharray="1, 1"/>
+                <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="0.1"/>
+                <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" stroke-width="0.2"/>
+                <circle cx="50" cy="50" r="32" fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="2, 4"/>
+                <circle cx="50" cy="50" r="15" fill="none" stroke="currentColor" stroke-width="0.1"/>
+                <circle cx="50" cy="50" r="5" fill="none" stroke="currentColor" stroke-width="0.3"/>
+                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(0 50 50)"></line>
+                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(30 50 50)"></line>
+                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(60 50 50)"></line>
+                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(90 50 50)"></line>
+                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(120 50 50)"></line>
+                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(150 50 50)"></line>
+                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(180 50 50)"></line>
+                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(210 50 50)"></line>
+                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(240 50 50)"></line>
+                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(270 50 50)"></line>
+                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(300 50 50)"></line>
+                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(330 50 50)"></line>
+            </svg>
+        </div>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="relative z-20 w-full bg-[#05030a]/80 backdrop-blur-md border-b border-purple-500/30 py-3 shadow-[0_4px_30px_rgba(0,0,0,0.5)] shrink-0">
+        <div class="container mx-auto px-4 flex justify-between items-center max-w-4xl">
+            <div class="flex items-center gap-4">
+                <a href="main.html" class="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </a>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-purple-900/50 border border-purple-500/50 flex items-center justify-center shadow-[0_0_10px_rgba(168,85,247,0.3)]">
+                        <i data-lucide="layers" class="w-5 h-5 text-purple-300"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white leading-none tracking-wide">Tarot Reading 🔮</h1>
+                        <p class="text-[11px] text-purple-300 mt-1">ให้หน้าไพ่เปิดเผยโชคชะตาของคุณ</p>
+                    </div>
+                </div>
+            </div>
+            <!-- ไอคอนโปรไฟล์ -->
+            <div class="w-8 h-8 rounded-full bg-white/5 border border-purple-500/30 flex items-center justify-center shadow-md">
+                <span class="text-purple-200 text-xs font-bold">P</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- CHAT AREA -->
+    <main class="relative z-10 flex-1 w-full max-w-4xl mx-auto flex flex-col min-h-0 bg-[#0a0512]/60 backdrop-blur-sm border-x border-purple-500/10 shadow-2xl">
+        
+        <div id="chat-messages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scroll-smooth">
+            
+            <!-- ข้อความต้อนรับ -->
+            <div class="flex gap-3 msg-animate">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-indigo-900 border border-purple-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.4)] mt-1">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+                </div>
+                <div class="flex flex-col gap-1 max-w-[90%] md:max-w-[85%] w-full">
+                    <span class="text-xs text-purple-300 ml-1">แม่หมอไพ่ยิปซี AI</span>
+                    <div class="bg-[#1a0f2e]/90 p-4 rounded-2xl rounded-tl-sm border border-purple-500/30 text-slate-200 text-sm md:text-base leading-relaxed shadow-lg">
+                        ยินดีต้อนรับเข้าสู่มิติแห่งไพ่ยิปซีค่ะ ✨<br><br>
+                        เพื่อให้ไพ่สะท้อนพลังงานและให้คำตอบที่ตรงจุดที่สุด <b>กรุณาเลือก "หมวดหมู่" ที่คุณต้องการให้ไพ่สื่อถึงในวันนี้ค่ะ</b>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ตัวเลือกหมวดหมู่ 7 โหมด -->
+            <div id="category-selection" class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pl-14 pr-4 msg-animate" style="animation-delay: 0.5s;">
+                
+                <!-- โหมด 3 สถานการณ์ -->
+                <button onclick="selectCategory('three_situations', 'การอ่านไพ่ 3 สถานการณ์', 'ดูเส้นทางชีวิต การแก้ไขปัญหา การตัดสินใจ')" class="relative w-full md:col-span-2 text-left p-4 rounded-xl border border-amber-500/40 bg-gradient-to-br from-amber-900/30 to-purple-900/10 hover:from-amber-800/40 hover:to-purple-800/20 transition-all flex items-center gap-4 group shadow-[0_0_15px_rgba(245,158,11,0.05)] hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] mt-1 mb-1">
+                    <div class="absolute -top-2.5 right-4 bg-gradient-to-r from-amber-400 to-orange-500 text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md">
+                        <i data-lucide="sparkles" class="w-3 h-3"></i> แนะนำ
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0 shadow-inner">
+                        <i data-lucide="layers" class="w-5 h-5 text-amber-400"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-bold text-amber-200 group-hover:text-amber-100 transition-colors">การอ่านไพ่ 3 สถานการณ์</div>
+                        <div class="text-xs text-amber-200/60 mt-0.5 group-hover:text-amber-100/80 transition-colors">
+                            ครอบคลุมการดูเส้นทางชีวิต, การแก้ไขปัญหา, หรือการตัดสินใจ
+                        </div>
+                    </div>
+                </button>
+
+                <!-- แถวที่ 1 (Daily & Love) -->
+                <button onclick="selectCategory('daily', 'ดวงรายวัน', 'ทำนายเรื่องสำคัญ ดูดวงวันนี้')" class="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/30 to-purple-900/5 hover:from-purple-800/40 hover:to-purple-800/10 transition-all flex items-center gap-4 group shadow-[0_0_15px_rgba(168,85,247,0.02)] hover:shadow-[0_0_20px_rgba(168,85,247,0.1)]">
+                    <div class="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"><i data-lucide="sun" class="w-5 h-5 text-purple-400"></i></div>
+                    <div>
+                        <div class="font-bold text-purple-200 group-hover:text-purple-100 transition-colors">ดวงรายวัน</div>
+                        <div class="text-xs text-purple-300/70 mt-0.5 group-hover:text-purple-200/90 transition-colors">ทำนายเรื่องสำคัญ ดูดวงวันนี้</div>
+                    </div>
+                </button>
+
+                <button onclick="selectCategory('love', 'ดวงความรัก', 'ความรัก คู่ครอง ปัญหา ทางออก')" class="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/30 to-purple-900/5 hover:from-purple-800/40 hover:to-purple-800/10 transition-all flex items-center gap-4 group shadow-[0_0_15px_rgba(168,85,247,0.02)] hover:shadow-[0_0_20px_rgba(168,85,247,0.1)]">
+                    <div class="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"><i data-lucide="heart" class="w-5 h-5 text-purple-400"></i></div>
+                    <div>
+                        <div class="font-bold text-purple-200 group-hover:text-purple-100 transition-colors">ดวงความรัก</div>
+                        <div class="text-xs text-purple-300/70 mt-0.5 group-hover:text-purple-200/90 transition-colors">ความรัก คู่ครอง ปัญหา ทางออก</div>
+                    </div>
+                </button>
+
+                <!-- แถวที่ 2 (Work & Finance) -->
+                <button onclick="selectCategory('work', 'ดวงการงาน อาชีพ', 'ปัญหา อุปสรรค โอกาส ทางแก้')" class="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/30 to-purple-900/5 hover:from-purple-800/40 hover:to-purple-800/10 transition-all flex items-center gap-4 group shadow-[0_0_15px_rgba(168,85,247,0.02)] hover:shadow-[0_0_20px_rgba(168,85,247,0.1)]">
+                    <div class="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"><i data-lucide="briefcase" class="w-5 h-5 text-purple-400"></i></div>
+                    <div>
+                        <div class="font-bold text-purple-200 group-hover:text-purple-100 transition-colors">ดวงการงาน อาชีพ</div>
+                        <div class="text-xs text-purple-300/70 mt-0.5 group-hover:text-purple-200/90 transition-colors">ปัญหา อุปสรรค โอกาส ทางแก้</div>
+                    </div>
+                </button>
+
+                <button onclick="selectCategory('finance', 'ดวงการเงิน', 'รายได้ หหนี้สิน สภาพคล่อง ปัญหา')" class="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/30 to-purple-900/5 hover:from-purple-800/40 hover:to-purple-800/10 transition-all flex items-center gap-4 group shadow-[0_0_15px_rgba(168,85,247,0.02)] hover:shadow-[0_0_20px_rgba(168,85,247,0.1)]">
+                    <div class="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"><i data-lucide="coins" class="w-5 h-5 text-purple-400"></i></div>
+                    <div>
+                        <div class="font-bold text-purple-200 group-hover:text-purple-100 transition-colors">ดวงการเงิน</div>
+                        <div class="text-xs text-purple-300/70 mt-0.5 group-hover:text-purple-200/90 transition-colors">รายได้ หนี้สิน สภาพคล่อง ปัญหา</div>
+                    </div>
+                </button>
+
+                <!-- แถวที่ 3 (Study & Health) -->
+                <button onclick="selectCategory('study', 'ดวงการเรียน', 'การเรียน การสอบ การปรับปรุง')" class="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/30 to-purple-900/5 hover:from-purple-800/40 hover:to-purple-800/10 transition-all flex items-center gap-4 group shadow-[0_0_15px_rgba(168,85,247,0.02)] hover:shadow-[0_0_20px_rgba(168,85,247,0.1)]">
+                    <div class="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"><i data-lucide="book-open" class="w-5 h-5 text-purple-400"></i></div>
+                    <div>
+                        <div class="font-bold text-purple-200 group-hover:text-purple-100 transition-colors">ดวงการเรียน</div>
+                        <div class="text-xs text-purple-300/70 mt-0.5 group-hover:text-purple-200/90 transition-colors">การเรียน การสอบ การปรับปรุง</div>
+                    </div>
+                </button>
+
+                <button onclick="selectCategory('health', 'ดวงสุขภาพ โรคภัย', 'เจ็บป่วย อุบัติเหตุ ดูแล ป้องกัน')" class="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/30 to-purple-900/5 hover:from-purple-800/40 hover:to-purple-800/10 transition-all flex items-center gap-4 group shadow-[0_0_15px_rgba(168,85,247,0.02)] hover:shadow-[0_0_20px_rgba(168,85,247,0.1)]">
+                    <div class="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"><i data-lucide="activity" class="w-5 h-5 text-purple-400"></i></div>
+                    <div>
+                        <div class="font-bold text-purple-200 group-hover:text-purple-100 transition-colors">ดวงสุขภาพ โรคภัย</div>
+                        <div class="text-xs text-purple-300/70 mt-0.5 group-hover:text-purple-200/90 transition-colors">เจ็บป่วย อุบัติเหตุ ดูแล ป้องกัน</div>
+                    </div>
+                </button>
+
+            </div>
+        </div>
+
+        <!-- Typing Indicator -->
+        <div id="typing-indicator" class="hidden px-4 md:px-6 pb-4 shrink-0">
+            <div class="flex gap-3">
+                <div class="w-8 h-8 rounded-full bg-purple-900/50 border border-purple-400/50 flex items-center justify-center shrink-0">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-purple-200"></i>
+                </div>
+                <div class="bg-[#1a0f2e]/90 py-3 px-4 rounded-2xl rounded-tl-sm border border-purple-500/30 flex gap-1 items-center w-fit shadow-lg">
+                    <div class="w-2 h-2 rounded-full typing-dot bg-purple-400 opacity-80"></div>
+                    <div class="w-2 h-2 rounded-full typing-dot bg-purple-400 opacity-80"></div>
+                    <div class="w-2 h-2 rounded-full typing-dot bg-purple-400 opacity-80"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INPUT AREA -->
+        <div class="w-full bg-[#05030a]/90 backdrop-blur-xl border-t border-purple-500/30 p-4 shrink-0 relative z-20">
+            <div class="max-w-4xl mx-auto relative flex items-center gap-2">
+                <input 
+                    type="text"
+                    id="user-input"
+                    disabled
+                    placeholder="กรุณาเลือกหมวดหมู่การทำนายด้านบนก่อนนะคะ..." 
+                    class="w-full bg-[#0a0512] border border-purple-900/50 focus:border-purple-500 text-white rounded-full py-3 px-6 pr-14 outline-none transition-all placeholder:text-purple-300/40 disabled:opacity-50 disabled:cursor-not-allowed shadow-inner"
+                    onkeydown="if(event.key === 'Enter') { sendMessage(); }"
+                >
+                <button 
+                    id="send-btn"
+                    disabled
+                    onclick="sendMessage()"
+                    class="absolute right-2 top-1.5 w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-600 flex items-center justify-center text-white hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_10px_rgba(168,85,247,0.4)]"
+                >
+                    <i data-lucide="send" class="w-4 h-4 ml-1"></i>
+                </button>
+            </div>
+            <p class="text-center text-[10px] text-purple-400/50 mt-2">AI ให้คำทำนายผ่านการสุ่มไพ่เพื่อเป็นแนวทาง โปรดใช้วิจารณญาณ</p>
+        </div>
+
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // สถานะการแชท
+        // AWAITING_CATEGORY -> AWAITING_SUB_CATEGORY -> AWAITING_QUESTION -> AWAITING_CARD_SELECTION -> PROCESSING -> READING_COMPLETE -> FOLLOW_UP_QUESTION
+        let chatState = 'AWAITING_CATEGORY'; 
+        let userData = {
+            categoryKey: '',
+            categoryName: '',
+            categoryDesc: '',
+            subCategoryKey: '',
+            subCategoryName: '',
+            question: '',
+            spreadType: 'fan1' 
+        };
+        let selectedCardsData = [];
+        let availableDeck = [];
+
+        // ----------------------------------------------------
+        // ชุดข้อมูลไพ่ 78 ใบ (ดึงภาพจริงจาก Public Domain)
+        // ----------------------------------------------------
+        const allTarotDeck = [];
+        let cardIdCount = 1;
+        
+        const majorArcana = [
+            "The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor", "The Hierophant", 
+            "The Lovers", "The Chariot", "Strength", "The Hermit", "Wheel of Fortune", "Justice", 
+            "The Hanged Man", "Death", "Temperance", "The Devil", "The Tower", "The Star", 
+            "The Moon", "The Sun", "Judgement", "The World"
+        ];
+        
+        // วนลูปสร้างไพ่ Major Arcana (ar00.jpg - ar21.jpg)
+        majorArcana.forEach((name, index) => {
+            let numStr = index < 10 ? '0' + index : index;
+            allTarotDeck.push({
+                id: cardIdCount++,
+                name: name,
+                type: 'major',
+                imgUrl: `https://sacred-texts.com/tarot/pkt/img/ar${numStr}.jpg`,
+                meaning: `ไพ่ชุดหลัก (Major Arcana) พลังงานและจุดเปลี่ยนสำคัญ`
+            });
+        });
+
+        const suits = ["Wands", "Cups", "Swords", "Pentacles"];
+        const suitPrefixes = {"Wands": "wa", "Cups": "cu", "Swords": "sw", "Pentacles": "pe"};
+        const ranks = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Page", "Knight", "Queen", "King"];
+        
+        // วนลูปสร้างไพ่ Minor Arcana 
+        suits.forEach(suit => {
+            let suitMeaning = suit === 'Wands' ? 'งาน ความหลงใหล และเป้าหมาย' 
+                            : suit === 'Cups' ? 'อารมณ์ ความสัมพันธ์ และความรัก' 
+                            : suit === 'Swords' ? 'สติปัญญา ปัญหา และการตัดสินใจ' 
+                            : 'เงินทอง ทรัพย์สิน และความมั่นคง';
+            
+            ranks.forEach((rank, index) => {
+                let rankNum = index + 1;
+                let numStr = rankNum < 10 ? '0' + rankNum : rankNum;
+                allTarotDeck.push({
+                    id: cardIdCount++,
+                    name: `${rank} of ${suit}`,
+                    type: suit.toLowerCase(),
+                    imgUrl: `https://sacred-texts.com/tarot/pkt/img/${suitPrefixes[suit]}${numStr}.jpg`, 
+                    meaning: `ไพ่ชุดรอง (Minor Arcana) สื่อถึง${suitMeaning}`
+                });
+            });
+        });
+
+        function shuffleArray(array) {
+            let shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const typingIndicator = document.getElementById('typing-indicator');
+
+        function scrollToBottom() {
+            setTimeout(() => {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 100);
+        }
+
+        function showTyping(show) {
+            if (show) {
+                typingIndicator.classList.remove('hidden');
+                scrollToBottom();
+            } else {
+                typingIndicator.classList.add('hidden');
+            }
+        }
+
+        function appendUserMessage(text) {
+            const msgHTML = `
+                <div class="flex gap-3 justify-end msg-animate">
+                    <div class="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] items-end">
+                        <div class="bg-gradient-to-br from-purple-500 to-fuchsia-600 p-4 rounded-2xl rounded-tr-sm text-white text-sm md:text-base leading-relaxed shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+                            ${text}
+                        </div>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-[#1a0f2e] border border-purple-500/50 flex items-center justify-center shrink-0 overflow-hidden">
+                         <span class="text-purple-300 font-bold">P</span>
+                    </div>
+                </div>
+            `;
+            chatMessages.insertAdjacentHTML('beforeend', msgHTML);
+            scrollToBottom();
+        }
+
+        function appendAIMessage(text, customContent = '') {
+            const msgHTML = `
+                <div class="flex gap-3 msg-animate w-full">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-indigo-900 border border-purple-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)] mt-1">
+                        <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div class="flex flex-col gap-1 max-w-[95%] md:max-w-[85%] w-full">
+                        <span class="text-xs text-purple-300 ml-1">แม่หมอไพ่ยิปซี AI</span>
+                        <div class="bg-[#1a0f2e]/90 p-4 rounded-2xl rounded-tl-sm border border-purple-500/30 text-slate-200 text-sm md:text-base leading-relaxed shadow-lg w-full overflow-hidden">
+                            ${text}
+                            ${customContent}
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatMessages.insertAdjacentHTML('beforeend', msgHTML);
+            lucide.createIcons();
+            scrollToBottom();
+        }
+
+        // ฟังก์ชันช่วยหา Label ของไพ่แต่ละใบตามโหมด
+        function getSlotLabels() {
+            if (userData.categoryKey !== 'three_situations') return ['ใบที่ 1', 'ใบที่ 2', 'ใบที่ 3'];
+            switch (userData.subCategoryKey) {
+                case 'life_path': return ['ใบที่ 1 (อดีต)', 'ใบที่ 2 (ปัจจุบัน)', 'ใบที่ 3 (อนาคต)'];
+                case 'problem_solving': return ['ใบที่ 1 (สาเหตุ)', 'ใบที่ 2 (วิธีแก้)', 'ใบที่ 3 (ผลลัพธ์)'];
+                case 'decision_making': return ['ใบที่ 1 (ทางเลือก A)', 'ใบที่ 2 (ทางเลือก B)', 'ใบที่ 3 (คำแนะนำ)'];
+                default: return ['ใบที่ 1', 'ใบที่ 2', 'ใบที่ 3'];
+            }
+        }
+
+        // 1. เลือกหมวดหมู่
+        function selectCategory(key, name, desc) {
+            if (chatState !== 'AWAITING_CATEGORY') return;
+
+            userData.categoryKey = key;
+            userData.categoryName = name;
+            userData.categoryDesc = desc;
+            
+            // แยกประเภทการกางไพ่ (ดวงรายวัน = Wheel 1 ใบ, 3 สถานการณ์ = Wheel 3 ใบ, โหมดอื่นๆ = Fan 1 ใบ)
+            userData.spreadType = key === 'three_situations' ? 'wheel3' : key === 'daily' ? 'wheel1' : 'fan1';
+
+            document.getElementById('category-selection').style.display = 'none';
+
+            appendUserMessage(`ฉันต้องการดูหมวด: <b>${name}</b>`);
+            showTyping(true);
+
+            setTimeout(() => {
+                showTyping(false);
+                
+                if (key === 'three_situations') {
+                    chatState = 'AWAITING_SUB_CATEGORY';
+                    
+                    let subCatUI = `
+                        <div class="mt-4 flex flex-col gap-3">
+                            <button onclick="window.selectSubCategory(this, 'life_path', 'ดูเส้นทางชีวิต')" class="w-full text-left p-3 md:p-4 rounded-xl border border-purple-500/30 bg-purple-900/20 hover:bg-purple-800/40 transition-colors shadow-md group">
+                                <div class="font-bold text-amber-200 group-hover:text-amber-100 mb-1 text-sm md:text-base">🌌 ดูเส้นทางชีวิต</div>
+                                <div class="text-xs text-purple-300/70">วิเคราะห์อดีต, ปัจจุบัน, และอนาคตของคุณ</div>
+                            </button>
+                            <button onclick="window.selectSubCategory(this, 'problem_solving', 'การแก้ไขปัญหา')" class="w-full text-left p-3 md:p-4 rounded-xl border border-purple-500/30 bg-purple-900/20 hover:bg-purple-800/40 transition-colors shadow-md group">
+                                <div class="font-bold text-amber-200 group-hover:text-amber-100 mb-1 text-sm md:text-base">🧩 การแก้ไขปัญหา</div>
+                                <div class="text-xs text-purple-300/70">หาสาเหตุ, วิธีแก้ไข, และผลลัพธ์ที่จะตามมา</div>
+                            </button>
+                            <button onclick="window.selectSubCategory(this, 'decision_making', 'การตัดสินใจ')" class="w-full text-left p-3 md:p-4 rounded-xl border border-purple-500/30 bg-purple-900/20 hover:bg-purple-800/40 transition-colors shadow-md group">
+                                <div class="font-bold text-amber-200 group-hover:text-amber-100 mb-1 text-sm md:text-base">⚖️ การตัดสินใจ</div>
+                                <div class="text-xs text-purple-300/70">เปรียบเทียบทางเลือก A, ทางเลือก B, และคำแนะนำ</div>
+                            </button>
+                        </div>
+                    `;
+                    appendAIMessage(`สำหรับการอ่านไพ่ 3 สถานการณ์ คุณต้องการให้แม่หมอเน้นดูรูปแบบไหนเป็นพิเศษคะ? ✨${subCatUI}`);
+                } else {
+                    chatState = 'AWAITING_QUESTION';
+                    userInput.disabled = false;
+                    sendBtn.disabled = false;
+                    userInput.placeholder = "พิมพ์เรื่องที่เจาะจง หรือคำถามในใจของคุณ (ถ้ามี)...";
+                    userInput.focus();
+
+                    let aiReply = `รับทราบค่ะ การทำนายครั้งนี้จะเน้นเจาะลึกไปที่พลังงานของ <b>${name}</b> นะคะ 🔮<br><br>`;
+                    aiReply += `ก่อนที่เราจะเปิดไพ่ <b>คุณมีคำถาม หรือเรื่องที่อยากบอกกล่าวให้ไพ่รับรู้ไหมคะ?</b> พิมพ์บอกมาได้เลยค่ะ (หากไม่มี พิมพ์ว่า "ไม่มี" ได้เลยค่ะ)`;
+                    
+                    appendAIMessage(aiReply);
+                }
+            }, 1000);
+        }
+
+        // 1.5 เลือกประเภทย่อย (สำหรับ 3 สถานการณ์)
+        window.selectSubCategory = function(btnElement, subKey, subName) {
+            if (chatState !== 'AWAITING_SUB_CATEGORY') return;
+
+            // ล็อกปุ่มเฉพาะในกล่องข้อความที่ถูกกด (ป้องกันการไปล็อกแชทรอบก่อนหน้า)
+            const subCatDiv = btnElement.parentElement;
+            if(subCatDiv) {
+                const btns = subCatDiv.querySelectorAll('button');
+                btns.forEach(b => {
+                    b.disabled = true;
+                    b.classList.add('opacity-50', 'cursor-not-allowed');
+                    b.classList.remove('hover:bg-purple-800/40');
+                });
+            }
+
+            userData.subCategoryKey = subKey;
+            userData.subCategoryName = subName;
+
+            appendUserMessage(`เลือกรูปแบบ: <b>${subName}</b>`);
+            showTyping(true);
+
+            setTimeout(() => {
+                showTyping(false);
+                chatState = 'AWAITING_QUESTION';
+                
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.placeholder = "พิมพ์เรื่องที่เจาะจง หรือคำถามในใจของคุณ (ถ้ามี)...";
+                userInput.focus();
+
+                let aiReply = `รับทราบค่ะ เราจะเปิดไพ่ 3 ใบเพื่อ <b>${subName}</b> โดยเฉพาะนะคะ 🔮<br><br>`;
+                aiReply += `ก่อนที่เราจะเริ่ม <b>คุณมีคำถามเจาะจง หรือเรื่องที่อยากบอกกล่าวให้ไพ่รับรู้ไหมคะ?</b> พิมพ์บอกมาได้เลยค่ะ (หากไม่มี พิมพ์ว่า "ไม่มี" ได้เลยค่ะ)`;
+                appendAIMessage(aiReply);
+            }, 1000);
+        }
+
+        // 2. พิมพ์คำถาม แล้วแสดงวงล้อ/พัดไพ่
+        function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            appendUserMessage(text);
+            userInput.value = '';
+
+            // ถ้ารอรับคำถาม ให้เข้ากระบวนการเปิดไพ่
+            if (chatState === 'AWAITING_QUESTION') {
+                userData.question = text;
+                promptCardSelection();
+            } 
+            // ถ้าอยู่ในโหมดถามเพิ่มเติมจากไพ่เดิม
+            else if (chatState === 'FOLLOW_UP_QUESTION') {
+                showTyping(true);
+                userInput.disabled = true;
+                sendBtn.disabled = true;
+
+                setTimeout(() => {
+                    showTyping(false);
+                    userInput.disabled = false;
+                    sendBtn.disabled = false;
+                    userInput.focus();
+                    
+                    let cardNames = selectedCardsData.map(c => c.name).join(', ');
+                    const response = `
+                        <div class="bg-black/40 p-3 rounded-lg border border-purple-500/30 text-[11px] font-mono text-purple-300 my-2 mb-4">
+                            <b>[Context Sent to AI]</b><br>
+                            คำถามต่อเนื่อง: ${text}<br>
+                            อ้างอิงไพ่เดิม: ${cardNames}
+                        </div>
+                        <b>แม่หมอขอตอบเพิ่มเติมนะคะ:</b><br><br>
+                        <span class="text-amber-200">(คำทำนายเจาะลึกจาก Gemini อิงจากไพ่ ${cardNames} จะแสดงตรงนี้)</span><br><br>
+                        <i>มีอะไรสงสัยเกี่ยวกับไพ่ชุดนี้อีกไหมคะ ถามได้ตลอดเลยนะ 💜</i>
+                    `;
+                    appendAIMessage(response);
+                }, 2500);
+            }
+            // ถ้าอ่านคำทำนายจบแล้ว แต่ผู้ใช้พิมพ์มาเอง (ถึงจะปิด input ไว้แล้วก็ตาม เผื่อหลุดมา)
+            else if (chatState === 'READING_COMPLETE') {
+                showTyping(true);
+                setTimeout(() => {
+                    showTyping(false);
+                    appendAIMessage("หากต้องการตั้งคำถามใหม่ กรุณากดเลือกปุ่มตัวเลือกที่อยู่ด้านบนนะคะ ✨");
+                }, 1000);
+            }
+        }
+
+        // 3. กางไพ่ (แยกแบบ 3 ใบ 78 ใบ หรือ 1 ใบ 22 ใบ หรือ 1 ใบ 78 ใบ ตามหมวดที่เลือก)
+        function promptCardSelection() {
+            showTyping(true);
+            userInput.disabled = true;
+            
+            // เคลียร์ ID เก่าออกไป เพื่อป้องกันการค้นหา Element ซ้ำซ้อนตอนเรียกใช้รอบใหม่
+            const cleanupIds = ['deck-container', 'tarot-slots', 'slot-0', 'slot-1', 'slot-2', 'selection-status', 'selection-status-inner', 'card-counter', 'fan-actions', 'wheel-actions', 'predict-btn'];
+            cleanupIds.forEach(id => {
+                const els = document.querySelectorAll('#' + id);
+                els.forEach(el => el.removeAttribute('id'));
+            });
+
+            setTimeout(() => {
+                showTyping(false);
+                chatState = 'AWAITING_CARD_SELECTION';
+                selectedCardsData = [];
+
+                let customUI = '';
+
+                // ---------- แบบวงล้อ (Wheel Spread - ใช้ 78 ใบ) ----------
+                if (userData.spreadType.startsWith('wheel')) {
+                    const isThree = userData.spreadType === 'wheel3';
+                    availableDeck = shuffleArray(allTarotDeck); // ไพ่เต็ม 78 ใบ
+
+                    let slotsHtml = '';
+                    if (isThree) {
+                        const labels = getSlotLabels();
+                        slotsHtml = `
+                            <div class="w-[60px] h-[90px] md:w-[80px] md:h-[120px] border-2 border-dashed border-purple-500/40 rounded-lg flex flex-col items-center justify-center text-purple-400/50 relative bg-[#0f0520]" id="slot-0">
+                                <span class="text-[10px] absolute -top-5 text-purple-200 bg-purple-900/80 px-2 py-0.5 rounded-full border border-purple-500/50 shadow-md whitespace-nowrap">${labels[0]}</span>
+                                <i data-lucide="plus" class="w-4 h-4 mb-1"></i>
+                            </div>
+                            <div class="w-[60px] h-[90px] md:w-[80px] md:h-[120px] border-2 border-dashed border-purple-500/40 rounded-lg flex flex-col items-center justify-center text-purple-400/50 relative bg-[#0f0520]" id="slot-1">
+                                <span class="text-[10px] absolute -top-5 text-purple-200 bg-purple-900/80 px-2 py-0.5 rounded-full border border-purple-500/50 shadow-md whitespace-nowrap">${labels[1]}</span>
+                                <i data-lucide="plus" class="w-4 h-4 mb-1"></i>
+                            </div>
+                            <div class="w-[60px] h-[90px] md:w-[80px] md:h-[120px] border-2 border-dashed border-purple-500/40 rounded-lg flex flex-col items-center justify-center text-purple-400/50 relative bg-[#0f0520]" id="slot-2">
+                                <span class="text-[10px] absolute -top-5 text-purple-200 bg-purple-900/80 px-2 py-0.5 rounded-full border border-purple-500/50 shadow-md whitespace-nowrap">${labels[2]}</span>
+                                <i data-lucide="plus" class="w-4 h-4 mb-1"></i>
+                            </div>
+                        `;
+                    } else {
+                        slotsHtml = `
+                            <div class="w-[80px] h-[120px] md:w-[100px] md:h-[150px] border-2 border-dashed border-purple-500/40 rounded-lg flex flex-col items-center justify-center text-purple-400/50 relative bg-[#0f0520]" id="slot-0">
+                                <i data-lucide="plus" class="w-6 h-6 mb-1"></i>
+                            </div>
+                        `;
+                    }
+
+                    customUI = `
+                        <div class="mt-4 mb-2 p-4 bg-black/40 rounded-2xl border border-purple-500/20 shadow-inner overflow-visible">
+                            
+                            <div class="flex justify-center gap-3 md:gap-6 mb-8" id="tarot-slots">
+                                ${slotsHtml}
+                            </div>
+
+                            <hr class="border-purple-500/30 mb-8">
+                            
+                            <!-- พื้นที่วงล้อไพ่ 360 องศา -->
+                            <div class="relative w-[320px] h-[320px] md:w-[580px] md:h-[580px] mx-auto flex items-center justify-center my-6 transition-opacity duration-500" id="deck-container">
+                                <!-- วงล้อจะถูกสร้างด้วย JS -->
+                            </div>
+                        </div>
+                    `;
+                    
+                    const topicDisplay = isThree ? userData.subCategoryName : userData.categoryName;
+                    appendAIMessage(`ผมได้ตั้งสำรับไพ่แบบ <b>78 ใบ</b> สำหรับ <b>${topicDisplay}</b> เรียบร้อยแล้วค่ะ<br><br>คุณสามารถสับไพ่ ตัดไพ่ และคลิกเลือกไพ่จากวงล้อมา ${isThree ? '3' : '1'} ใบได้เลยค่ะ ✨`, customUI);
+                    userInput.placeholder = `กรุณาเลือกไพ่ให้ครบ ${isThree ? '3' : '1'} ใบ...`;
+                    
+                    // เรนเดอร์วงล้อ
+                    setTimeout(() => window.renderWheelSpread(false), 50);
+                } 
+                // ---------- แบบครึ่งวงกลม (Fan Spread - ใช้ Major Arcana 22 ใบ) ----------
+                else {
+                    // กรองเฉพาะไพ่ Major Arcana (22 ใบ) มาให้เลือก
+                    availableDeck = shuffleArray(allTarotDeck.filter(card => card.type === 'major'));
+
+                    customUI = `
+                        <div class="mt-4 mb-2 p-4 bg-black/40 rounded-2xl border border-purple-500/20 shadow-inner overflow-visible text-center">
+                            
+                            <div class="flex justify-center mb-6" id="tarot-slots">
+                                <div class="w-[80px] h-[120px] md:w-[100px] md:h-[150px] border-2 border-dashed border-purple-500/40 rounded-lg flex flex-col items-center justify-center text-purple-400/50 relative bg-[#0f0520]" id="slot-0">
+                                    <i data-lucide="plus" class="w-6 h-6 mb-1"></i>
+                                </div>
+                            </div>
+
+                            <hr class="border-purple-500/30 mb-2">
+                            
+                            <!-- พื้นที่วงล้อไพ่ครึ่งวงกลม (Fan Spread) -->
+                            <div class="fan-wrapper transition-opacity duration-500" id="deck-container">
+                                <!-- ไพ่ 22 ใบถูกวาดผ่าน JS function renderFanSpread() -->
+                            </div>
+
+                            <div class="mt-6 flex flex-col items-center">
+                                <p class="text-[13px] text-slate-200 mb-3" id="selection-status">คลิกเลือกไพ่ 1 ใบ แล้วคลิกปุ่ม 'ทำนาย'</p>
+                                <div id="fan-actions" class="flex justify-center gap-6 text-blue-500 mb-4 text-[15px] underline underline-offset-4 font-medium">
+                                    <button onclick="window.shuffleFanAction()" class="hover:text-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">สับไพ่</button>
+                                    <button onclick="window.cutFanAction()" class="hover:text-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">ตัดไพ่</button>
+                                </div>
+                                <button id="predict-btn" onclick="window.submitPrediction()" disabled class="px-8 py-2 bg-slate-600 text-white rounded font-medium disabled:opacity-50 transition-colors cursor-not-allowed shadow-md">ทำนาย</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    appendAIMessage(`ผมได้ตั้งสำรับไพ่ <b>Major Arcana (22 ใบ)</b> สำหรับ <b>${userData.categoryName}</b> เรียบร้อยแล้วค่ะ<br><br>คุณสามารถสับไพ่ ตัดไพ่ และคลิกเลือกไพ่มา 1 ใบได้เลยค่ะ ✨`, customUI);
+                    userInput.placeholder = "กรุณาเลือกไพ่ 1 ใบ และกดปุ่มทำนาย...";
+                    
+                    // เรนเดอร์ไพ่ครึ่งวงกลม
+                    setTimeout(() => window.renderFanSpread(false), 50);
+                }
+            }, 1000);
+        }
+
+        // ==========================================
+        // ฟังก์ชันสำหรับวงล้อ (Wheel Spread - 78 ใบ)
+        // ==========================================
+        window.renderWheelSpread = function(animateFromCenter = false) {
+            const container = document.getElementById('deck-container');
+            if (!container) return;
+            
+            let html = '';
+            let validCards = [];
+            
+            // หาไพ่ที่ยังไม่ได้ถูกดึงไป
+            for(let i=0; i<availableDeck.length; i++) {
+                if(availableDeck[i]) validCards.push(i);
+            }
+            
+            const total = validCards.length;
+            const isThree = userData.spreadType === 'wheel3';
+            
+            validCards.forEach((originalIndex, idx) => {
+                const angle = (360 / total) * idx;
+                const inlineTransform = animateFromCenter ? 'transform: rotate(0deg) translateY(0px) translateX(0px);' : '';
+                
+                html += `
+                    <div class="deck-card-circle cursor-pointer rounded border border-purple-400/50 card-back shadow-md" 
+                         style="--target-angle: ${angle}deg; z-index: ${idx}; ${inlineTransform}" 
+                         data-index="${originalIndex}" 
+                         onclick="window.selectFromDeck(this)">
+                    </div>
+                `;
+            });
+
+            // สร้างปุ่มควบคุมตรงกลางวงล้อ
+            const centerControls = `
+                <div class="absolute z-20 text-center flex flex-col items-center justify-center w-[160px] md:w-[200px] pointer-events-auto bg-[#0a0512]/80 backdrop-blur-md p-4 rounded-full border border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.2)] aspect-square">
+                    <p class="text-[11px] md:text-[13px] text-slate-200 mb-2 leading-relaxed" id="selection-status-inner">คลิกเลือกไพ่ ${isThree ? '3' : '1'} ใบ <br>แล้วคลิก 'ทำนาย'</p>
+                    <div id="wheel-actions" class="flex justify-center gap-3 text-blue-400 mb-3 text-[13px] md:text-[15px] underline underline-offset-4 font-medium">
+                        <button onclick="window.shuffleWheelAction()" class="hover:text-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">สับไพ่</button>
+                        <button onclick="window.cutWheelAction()" class="hover:text-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">ตัดไพ่</button>
+                    </div>
+                    <button id="predict-btn" onclick="window.submitPrediction()" disabled class="px-6 py-1.5 bg-slate-600 text-white rounded font-medium disabled:opacity-50 transition-colors cursor-not-allowed text-xs md:text-sm shadow-md">ทำนาย</button>
+                </div>
+            `;
+
+            container.innerHTML = centerControls + html;
+
+            if (animateFromCenter) {
+                container.offsetHeight; 
+                const cards = container.querySelectorAll('.deck-card-circle');
+                cards.forEach(card => {
+                    card.style.transform = ''; 
+                });
+            }
+        };
+
+        window.shuffleWheelAction = function() {
+            const container = document.getElementById('deck-container');
+            if(!container) return;
+            const cards = container.querySelectorAll('.deck-card-circle');
+            
+            const actionBtns = document.querySelectorAll('#wheel-actions button');
+            actionBtns.forEach(b => b.disabled = true);
+
+            cards.forEach(card => card.style.transform = 'rotate(0deg) translateY(0px) translateX(0px)');
+
+            setTimeout(() => {
+                cards.forEach((card, i) => {
+                    const dir = i % 2 === 0 ? -1 : 1;
+                    card.style.transform = `rotate(${dir * 10}deg) translateX(${dir * 50}px) translateY(-10px)`;
+                });
+            }, 350);
+
+            setTimeout(() => {
+                cards.forEach(card => card.style.transform = 'rotate(0deg) translateY(0px) translateX(0px)');
+            }, 700);
+
+            setTimeout(() => {
+                availableDeck = shuffleArray(availableDeck);
+                window.renderWheelSpread(true);
+                actionBtns.forEach(b => b.disabled = false);
+            }, 1050);
+        };
+
+        window.cutWheelAction = function() {
+            const container = document.getElementById('deck-container');
+            if(!container) return;
+            const cards = container.querySelectorAll('.deck-card-circle');
+            
+            const actionBtns = document.querySelectorAll('#wheel-actions button');
+            actionBtns.forEach(b => b.disabled = true);
+
+            const cutPoint = Math.floor(Math.random() * (availableDeck.length - 10)) + 5;
+
+            cards.forEach(card => card.style.transform = 'rotate(0deg) translateY(0px) translateX(0px)');
+
+            setTimeout(() => {
+                cards.forEach((card, i) => {
+                    if (i < cutPoint) card.style.transform = 'translateX(50px) translateY(-30px) rotate(5deg)';
+                    else card.style.transform = 'translateX(-30px) translateY(10px) rotate(-5deg)';
+                });
+            }, 350);
+
+            setTimeout(() => {
+                cards.forEach(card => card.style.transform = 'rotate(0deg) translateY(0px) translateX(0px)');
+            }, 700);
+
+            setTimeout(() => {
+                const topHalf = availableDeck.slice(0, cutPoint);
+                const bottomHalf = availableDeck.slice(cutPoint);
+                availableDeck = bottomHalf.concat(topHalf);
+                window.renderWheelSpread(true);
+                actionBtns.forEach(b => b.disabled = false);
+            }, 1050);
+        };
+
+        // ==========================================
+        // ฟังก์ชันสำหรับพัด (Fan Spread - 22 ใบ)
+        // ==========================================
+        window.renderFanSpread = function(animateFromCenter = false) {
+            const container = document.getElementById('deck-container');
+            if (!container) return;
+            
+            let html = '';
+            let validCards = [];
+            
+            for(let i=0; i<availableDeck.length; i++) {
+                if(availableDeck[i]) validCards.push(i);
+            }
+            
+            const total = validCards.length;
+            const maxAngle = window.innerWidth < 768 ? 50 : 55; 
+            
+            validCards.forEach((originalIndex, idx) => {
+                const angle = -maxAngle + ((maxAngle * 2) / (total - 1 || 1)) * idx;
+                const inlineTransform = animateFromCenter ? 'transform: rotate(0deg) translateY(0px) translateX(0px);' : '';
+                
+                html += `
+                    <div class="deck-card-fan cursor-pointer rounded border border-purple-400/50 card-back shadow-md" 
+                         style="--target-angle: ${angle}deg; z-index: ${idx}; ${inlineTransform}" 
+                         data-index="${originalIndex}" 
+                         onclick="window.selectFromDeck(this)">
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+
+            if (animateFromCenter) {
+                container.offsetHeight; 
+                const cards = container.querySelectorAll('.deck-card-fan');
+                cards.forEach(card => {
+                    card.style.transform = ''; 
+                });
+            }
+        };
+
+        window.shuffleFanAction = function() {
+            const container = document.getElementById('deck-container');
+            if(!container) return;
+            const cards = container.querySelectorAll('.deck-card-fan');
+            
+            const actionBtns = document.querySelectorAll('#fan-actions button');
+            actionBtns.forEach(b => b.disabled = true);
+
+            cards.forEach(card => card.style.transform = 'rotate(0deg) translateY(0px) translateX(0px)');
+
+            setTimeout(() => {
+                cards.forEach((card, i) => {
+                    const dir = i % 2 === 0 ? -1 : 1;
+                    card.style.transform = `rotate(${dir * 10}deg) translateX(${dir * 50}px) translateY(-10px)`;
+                });
+            }, 350);
+
+            setTimeout(() => {
+                cards.forEach(card => card.style.transform = 'rotate(0deg) translateY(0px) translateX(0px)');
+            }, 700);
+
+            setTimeout(() => {
+                availableDeck = shuffleArray(availableDeck);
+                window.renderFanSpread(true); 
+                actionBtns.forEach(b => b.disabled = false);
+            }, 1050);
+        };
+
+        window.cutFanAction = function() {
+            const container = document.getElementById('deck-container');
+            if(!container) return;
+            const cards = container.querySelectorAll('.deck-card-fan');
+            
+            const actionBtns = document.querySelectorAll('#fan-actions button');
+            actionBtns.forEach(b => b.disabled = true);
+
+            const cutPoint = Math.floor(Math.random() * (availableDeck.length - 4)) + 2;
+
+            cards.forEach(card => card.style.transform = 'rotate(0deg) translateY(0px) translateX(0px)');
+
+            setTimeout(() => {
+                cards.forEach((card, i) => {
+                    if (i < cutPoint) card.style.transform = 'translateX(50px) translateY(-30px) rotate(5deg)';
+                    else card.style.transform = 'translateX(-30px) translateY(10px) rotate(-5deg)';
+                });
+            }, 350);
+
+            setTimeout(() => {
+                cards.forEach(card => card.style.transform = 'rotate(0deg) translateY(0px) translateX(0px)');
+            }, 700);
+
+            setTimeout(() => {
+                const topHalf = availableDeck.slice(0, cutPoint);
+                const bottomHalf = availableDeck.slice(cutPoint);
+                availableDeck = bottomHalf.concat(topHalf);
+                window.renderFanSpread(true);
+                actionBtns.forEach(b => b.disabled = false);
+            }, 1050);
+        };
+
+        // ==========================================
+        // การคลิกปุ่ม "ทำนาย"
+        // ==========================================
+        window.submitPrediction = function() {
+            const reqCards = userData.spreadType === 'wheel3' ? 3 : 1;
+            if (selectedCardsData.length !== reqCards) return;
+            
+            chatState = 'PROCESSING';
+            const msgBox = document.getElementById('predict-btn').closest('.bg-\\[\\#1a0f2e\\]\\/90');
+            
+            const deckContainer = msgBox.querySelector('#deck-container');
+            if(deckContainer) {
+                deckContainer.style.opacity = '0.3';
+                deckContainer.style.pointerEvents = 'none';
+            }
+            
+            const predictBtn = msgBox.querySelector('#predict-btn');
+            if (predictBtn) {
+                predictBtn.disabled = true;
+                predictBtn.className = "px-6 py-1.5 md:px-8 md:py-2 bg-slate-600 text-white rounded font-medium disabled:opacity-50 transition-colors cursor-not-allowed text-xs md:text-sm shadow-md";
+            }
+            
+            setTimeout(() => {
+                generatePrediction(selectedCardsData);
+            }, 1000);
+        };
+
+        // ==========================================
+        // การเลือกไพ่จากวงล้อหรือพัด
+        // ==========================================
+        window.selectFromDeck = function(element) {
+            if(chatState !== 'AWAITING_CARD_SELECTION') return;
+
+            const isWheel = userData.spreadType.startsWith('wheel');
+            const reqCards = userData.spreadType === 'wheel3' ? 3 : 1;
+            
+            if(selectedCardsData.length >= reqCards) return;
+
+            const cardIndex = parseInt(element.getAttribute('data-index'));
+            const selectedCard = availableDeck[cardIndex];
+            if (!selectedCard) return;
+
+            // ทำให้ไพ่ในกองหายไป
+            element.style.opacity = '0';
+            element.style.pointerEvents = 'none';
+            availableDeck[cardIndex] = null; 
+            
+            selectedCardsData.push(selectedCard);
+            const slotIndex = selectedCardsData.length - 1;
+
+            const msgBox = element.closest('.bg-\\[\\#1a0f2e\\]\\/90');
+            const targetSlot = msgBox.querySelector(`#slot-${slotIndex}`);
+
+            // อัปเดต UI ของ Slot โดยใช้ labels ที่ตรงกับโหมด
+            const labels = getSlotLabels();
+            let badgeText = 'ไพ่ที่เลือก';
+            if (reqCards === 3) {
+                badgeText = labels[slotIndex];
+            }
+
+            targetSlot.outerHTML = `
+                <div class="tarot-card-container w-[60px] h-[90px] md:w-[80px] md:h-[120px] relative mx-auto">
+                    <span class="text-[10px] absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded-full text-purple-200 bg-purple-900/80 border border-purple-500/50 shadow-md z-10">${badgeText}</span>
+                    <div class="tarot-card w-full h-full flipped">
+                        <div class="card-face card-back"></div>
+                        <div class="card-face card-front relative">
+                            <img src="${selectedCard.imgUrl}" alt="${selectedCard.name}">
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // อัปเดตข้อความและปุ่มคำสั่ง
+            const actionsId = isWheel ? '#wheel-actions' : '#fan-actions';
+            const statusId = isWheel ? '#selection-status-inner' : '#selection-status';
+
+            if (selectedCardsData.length === reqCards) {
+                const actions = msgBox.querySelector(actionsId);
+                if(actions) actions.style.display = 'none';
+
+                const statusEl = msgBox.querySelector(statusId);
+                if(statusEl) statusEl.innerHTML = `<span class="text-green-400 font-bold tracking-wide text-[12px] md:text-[14px]">เลือกครบแล้ว<br>คลิก 'ทำนาย'</span>`;
+
+                const predictBtn = msgBox.querySelector('#predict-btn');
+                if (predictBtn) {
+                    predictBtn.disabled = false;
+                    predictBtn.className = "px-6 py-1.5 md:px-8 md:py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded font-bold shadow-md transition-colors cursor-pointer text-xs md:text-sm";
+                }
+            } else {
+                if (reqCards === 3) {
+                    const statusEl = msgBox.querySelector(statusId);
+                    if (statusEl) statusEl.innerHTML = `คลิกเลือกไพ่ใบที่ ${selectedCardsData.length + 1}<br>จาก 3 ใบ`;
+                }
+            }
+
+            lucide.createIcons();
+            setTimeout(scrollToBottom, 50);
+        };
+
+        // 5. ส่งให้ AI ทำนาย
+        function generatePrediction(cards) {
+            showTyping(true);
+            
+            // ล็อกปุ่มและช่องแชทเอาไว้ก่อนระหว่างรอรับคำถามใหม่
+            userInput.disabled = true;
+            userInput.placeholder = "รอรับคำทำนายจากแม่หมอ...";
+
+            setTimeout(() => {
+                showTyping(false);
+
+                let cardsSummaryHTML = `<div class="space-y-4 my-4 bg-black/20 p-4 rounded-xl border border-purple-500/30 text-sm">`;
+                
+                // พ่น UI สำหรับไพ่ 3 ใบ
+                if (cards.length === 3) {
+                    const labels = getSlotLabels();
+                    const badgeColors = ['bg-purple-900/50 text-purple-200', 'bg-fuchsia-900/50 text-fuchsia-200', 'bg-indigo-900/50 text-indigo-200'];
+                    
+                    cards.forEach((card, idx) => {
+                        cardsSummaryHTML += `
+                            <div class="flex gap-4 items-start">
+                                <div class="w-14 h-20 md:w-20 md:h-32 shrink-0 border border-purple-500/50 rounded overflow-hidden shadow-md">
+                                    <img src="${card.imgUrl}" class="w-full h-full object-cover">
+                                </div>
+                                <div>
+                                    <span class="text-[10px] md:text-xs font-bold px-2 py-0.5 rounded ${badgeColors[idx]} border border-purple-500/30">${labels[idx]}</span>
+                                    <div class="font-bold text-amber-400 mt-1.5 text-base">${card.name}</div>
+                                    <div class="text-slate-300 text-xs md:text-sm mt-1 leading-relaxed"><i>${card.meaning}</i></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } 
+                // พ่น UI สำหรับไพ่ 1 ใบ
+                else {
+                    cardsSummaryHTML += `
+                        <div class="flex gap-4 items-start">
+                            <div class="w-16 h-24 md:w-20 md:h-32 shrink-0 border border-purple-500/50 rounded overflow-hidden shadow-md">
+                                <img src="${cards[0].imgUrl}" class="w-full h-full object-cover">
+                            </div>
+                            <div>
+                                <span class="text-[10px] md:text-xs font-bold px-2 py-0.5 rounded bg-purple-900/50 text-purple-200 border border-purple-500/30">ไพ่ที่เลือก</span>
+                                <div class="font-bold text-amber-400 mt-1.5 text-base md:text-lg">${cards[0].name}</div>
+                                <div class="text-slate-300 text-xs md:text-sm mt-1 leading-relaxed"><i>${cards[0].meaning}</i></div>
+                            </div>
+                        </div>
+                    `;
+                }
+                cardsSummaryHTML += `</div>`;
+
+                // ข้อความเกริ่นของ AI 
+                let introText = '';
+                if (cards.length === 3) {
+                    if (userData.subCategoryKey === 'life_path') {
+                        introText = `จากไพ่ทั้ง 3 ใบที่เปิดได้ในรูปแบบ <b>${userData.subCategoryName}</b><br><br>ใบแรก <b>${cards[0].name}</b> สะท้อนถึงจุดเริ่มต้นหรือพลังงานในอดีต ส่วนใบกลาง <b>${cards[1].name}</b> คือสิ่งที่คุณกำลังเผชิญในปัจจุบัน และใบสุดท้าย <b>${cards[2].name}</b> เป็นตัวแทนของทิศทางหรือบทสรุปในอนาคตค่ะ ✨`;
+                    } else if (userData.subCategoryKey === 'problem_solving') {
+                        introText = `จากไพ่ทั้ง 3 ใบที่เปิดได้ในรูปแบบ <b>${userData.subCategoryName}</b><br><br>ใบแรก <b>${cards[0].name}</b> สะท้อนถึงต้นตอหรือสาเหตุของปัญหา ส่วนใบกลาง <b>${cards[1].name}</b> คือแนวทางหรือวิธีแก้ไขที่คุณสามารถทำได้ และใบสุดท้าย <b>${cards[2].name}</b> เป็นตัวแทนของผลลัพธ์ที่จะตามมาค่ะ ✨`;
+                    } else if (userData.subCategoryKey === 'decision_making') {
+                        introText = `จากไพ่ทั้ง 3 ใบที่เปิดได้ในรูปแบบ <b>${userData.subCategoryName}</b><br><br>ใบแรก <b>${cards[0].name}</b> สะท้อนถึงทางเลือก A ส่วนใบกลาง <b>${cards[1].name}</b> สะท้อนถึงทางเลือก B และใบสุดท้าย <b>${cards[2].name}</b> เป็นตัวแทนของคำแนะนำจากดวงดาวเพื่อช่วยให้คุณตัดสินใจได้ดีที่สุดค่ะ ✨`;
+                    } else {
+                         introText = `จากไพ่ทั้ง 3 ใบที่เปิดได้ในหมวด <b>${userData.categoryName}</b><br><br>ใบแรก <b>${cards[0].name}</b> จะสะท้อนถึงจุดเริ่มต้น พลังงานแฝง หรือสถานการณ์ตั้งต้น ส่วนใบกลาง <b>${cards[1].name}</b> คือสิ่งที่คุณกำลังเผชิญ ปัญหา หรือความเชื่อมโยงในปัจจุบัน และใบสุดท้าย <b>${cards[2].name}</b> เป็นตัวแทนของบทสรุป ทิศทาง หรือคำแนะนำจากดวงดาวค่ะ ✨`;
+                    }
+                } else {
+                    introText = `จากไพ่ <b>${cards[0].name}</b> ที่คุณเลือกในหมวด <b>${userData.categoryName}</b><br><br>ไพ่ใบนี้สะท้อนถึงพลังงานหลักและเป็นคำตอบสำหรับเรื่องราวของคุณโดยตรงค่ะ ✨`;
+                }
+
+                const predictionResponse = `
+                    <div class="bg-black/40 p-3 rounded-lg border border-purple-500/30 text-[11px] font-mono text-purple-300 my-2 mb-4">
+                        <b>[Context Sent to AI]</b><br>
+                        หมวดหมู่: ${userData.categoryName} ${userData.subCategoryName ? `(${userData.subCategoryName})` : ''}<br>
+                        คำถาม: ${userData.question || "ไม่มี"}
+                    </div>
+                    
+                    <b>หน้าไพ่ที่คุณเปิดได้:</b>
+                    ${cardsSummaryHTML}
+                    
+                    <b>คำทำนายจากแม่หมอ:</b><br>
+                    ${introText}<br><br>
+                    <span class="text-amber-200">(คำทำนายแบบละเอียดและเชื่อมโยงหมวดหมู่จาก Gemini จะแสดงตรงนี้)</span><br><br>
+                    <i>อ่านแล้วรู้สึกยังไงบ้างคะ?</i>
+                `;
+
+                // ส่งคำทำนายออกไป
+                appendAIMessage(predictionResponse);
+
+                // เริ่มกระบวนการส่งข้อความถามต่อ (แยกเป็นอีก 1 แชท)
+                showTyping(true);
+                setTimeout(() => {
+                    showTyping(false);
+                    chatState = 'READING_COMPLETE';
+                    userInput.placeholder = "โปรดเลือกรูปแบบคำถามด้านบน...";
+
+                    const followUpResponse = `
+                        <div class="p-4 bg-purple-900/20 border border-purple-500/30 rounded-xl text-center">
+                            <p class="text-purple-200 mb-4 text-sm md:text-base">ต้องการทำสิ่งใดต่อไปคะ?</p>
+                            <div class="flex flex-col md:flex-row justify-center gap-3">
+                                <button onclick="window.askFollowUpQuestion(this)" class="px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white rounded-full font-bold shadow-md transition-all hover:scale-105 text-sm md:text-base flex-1">
+                                    💬 ถามเพิ่มจากไพ่เดิม
+                                </button>
+                                <button onclick="window.prepareNewQuestion(this)" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-full font-bold shadow-md transition-all hover:scale-105 text-sm md:text-base flex-1">
+                                    🃏 ตั้งคำถามและเปิดไพ่ใหม่
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    appendAIMessage(followUpResponse);
+                }, 2000); // หน่วงเวลาอีก 2 วิให้ดูสมจริง
+
+            }, 3000); 
+        }
+
+        // ==========================================
+        // ฟังก์ชันเมื่อกดปุ่ม "ถามเพิ่มจากไพ่เดิม"
+        // ==========================================
+        window.askFollowUpQuestion = function(btnElement) {
+            if(chatState !== 'READING_COMPLETE') return;
+
+            // ปรับ UI ของกลุ่มปุ่มให้รู้ว่ากดไปแล้ว
+            const container = btnElement.closest('.flex');
+            const btns = container.querySelectorAll('button');
+            btns.forEach(b => {
+                b.disabled = true;
+                b.classList.add('opacity-50', 'cursor-not-allowed');
+                b.classList.remove('hover:scale-105');
+            });
+            btnElement.innerText = "เลือกถามเพิ่มแล้ว";
+
+            appendUserMessage("ขอถามเพิ่มเติมจากไพ่ชุดนี้ค่ะ/ครับ");
+
+            showTyping(true);
+            setTimeout(() => {
+                showTyping(false);
+                
+                chatState = 'FOLLOW_UP_QUESTION';
+                
+                const userInputEl = document.getElementById('user-input');
+                const sendBtnEl = document.getElementById('send-btn');
+                
+                userInputEl.disabled = false;
+                sendBtnEl.disabled = false;
+                userInputEl.placeholder = "พิมพ์คำถามเพิ่มเติมเกี่ยวกับไพ่ชุดนี้ได้เลยค่ะ...";
+                userInputEl.focus();
+                
+                appendAIMessage("ได้เลยค่ะ มีเรื่องไหนจากหน้าไพ่ชุดนี้ที่คุณอยากให้แม่หมอช่วยขยายความ หรือมีคำถามอะไรเพิ่มเติม พิมพ์มาได้เลยนะคะ 🔮");
+            }, 1000);
+        };
+
+        // ==========================================
+        // ฟังก์ชันเมื่อกดปุ่ม "ตั้งคำถามและเปิดไพ่ใหม่"
+        // ==========================================
+        window.prepareNewQuestion = function(btnElement) {
+            // ป้องกันการกดซ้ำซ้อน
+            if(chatState !== 'READING_COMPLETE') return;
+
+            // ปรับ UI ของกลุ่มปุ่มให้รู้ว่ากดไปแล้ว
+            const container = btnElement.closest('.flex');
+            const btns = container.querySelectorAll('button');
+            btns.forEach(b => {
+                b.disabled = true;
+                b.classList.add('opacity-50', 'cursor-not-allowed');
+                b.classList.remove('hover:scale-105');
+            });
+            btnElement.innerText = "เลือกเปิดไพ่ใหม่แล้ว";
+
+            appendUserMessage("ต้องการตั้งคำถามและเปิดไพ่ใหม่ค่ะ/ครับ");
+
+            showTyping(true);
+            setTimeout(() => {
+                showTyping(false);
+                
+                // ตรวจสอบว่าถ้าอยู่ในหมวด 3 สถานการณ์ ให้ถามรูปแบบย่อยอีกครั้ง
+                if (userData.categoryKey === 'three_situations') {
+                    chatState = 'AWAITING_SUB_CATEGORY';
+                    
+                    let subCatUI = `
+                        <div class="mt-4 flex flex-col gap-3">
+                            <button onclick="window.selectSubCategory(this, 'life_path', 'ดูเส้นทางชีวิต')" class="w-full text-left p-3 md:p-4 rounded-xl border border-purple-500/30 bg-purple-900/20 hover:bg-purple-800/40 transition-colors shadow-md group">
+                                <div class="font-bold text-amber-200 group-hover:text-amber-100 mb-1 text-sm md:text-base">🌌 ดูเส้นทางชีวิต</div>
+                                <div class="text-xs text-purple-300/70">วิเคราะห์อดีต, ปัจจุบัน, และอนาคตของคุณ</div>
+                            </button>
+                            <button onclick="window.selectSubCategory(this, 'problem_solving', 'การแก้ไขปัญหา')" class="w-full text-left p-3 md:p-4 rounded-xl border border-purple-500/30 bg-purple-900/20 hover:bg-purple-800/40 transition-colors shadow-md group">
+                                <div class="font-bold text-amber-200 group-hover:text-amber-100 mb-1 text-sm md:text-base">🧩 การแก้ไขปัญหา</div>
+                                <div class="text-xs text-purple-300/70">หาสาเหตุ, วิธีแก้ไข, และผลลัพธ์ที่จะตามมา</div>
+                            </button>
+                            <button onclick="window.selectSubCategory(this, 'decision_making', 'การตัดสินใจ')" class="w-full text-left p-3 md:p-4 rounded-xl border border-purple-500/30 bg-purple-900/20 hover:bg-purple-800/40 transition-colors shadow-md group">
+                                <div class="font-bold text-amber-200 group-hover:text-amber-100 mb-1 text-sm md:text-base">⚖️ การตัดสินใจ</div>
+                                <div class="text-xs text-purple-300/70">เปรียบเทียบทางเลือก A, ทางเลือก B, และคำแนะนำ</div>
+                            </button>
+                        </div>
+                    `;
+                    appendAIMessage(`สำหรับการอ่านไพ่ 3 สถานการณ์ในรอบนี้ คุณต้องการให้แม่หมอเน้นดูรูปแบบไหนเป็นพิเศษคะ? ✨${subCatUI}`);
+                } else {
+                    // เปลี่ยน State ให้กลับไปรอคำถามใหม่ (สำหรับโหมดอื่นๆ)
+                    chatState = 'AWAITING_QUESTION';
+                    
+                    // เปิดให้ช่องแชทกลับมาพิมพ์ได้อีกครั้ง
+                    const userInputEl = document.getElementById('user-input');
+                    const sendBtnEl = document.getElementById('send-btn');
+                    
+                    userInputEl.disabled = false;
+                    sendBtnEl.disabled = false;
+                    userInputEl.placeholder = "พิมพ์คำถามใหม่ของคุณได้เลยค่ะ...";
+                    userInputEl.focus();
+                    
+                    appendAIMessage("ยินดีค่ะ พิมพ์คำถามใหม่ที่คุณอยากให้แม่หมอและไพ่ช่วยชี้แนะมาได้เลยนะคะ 🔮");
+                }
+            }, 1000);
+        };
+    </script>
+</body>
+</html>
