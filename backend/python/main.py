@@ -1,8 +1,8 @@
 import os
-from typing import Optional
+from typing import Optional, List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -75,6 +75,26 @@ class ThaiAstrologyRequest(BaseModel):
     current_lon: Optional[str] = None
     question: str
     mode: str = "THAI_ASTROLOGY"
+
+class TarotCard(BaseModel):
+    name: str
+    type: str = ""
+    meaning: str = ""
+    position: Optional[str] = None
+
+class TarotRequest(BaseModel):
+    name: str = "ผู้ใช้"
+    full_name: Optional[str] = None
+    nickname: Optional[str] = None
+    birthdate: str = ""
+    category: str = "daily"
+    category_label: str = "ดวงรายวัน"
+    subcategory: str = ""
+    subcategory_label: str = ""
+    spread_type: str = "fan1"
+    question: str
+    cards: List[TarotCard] = Field(default_factory=list)
+    mode: str = "TAROT_READING"
 
 def calculate_root_number(value: str):
     digits = [int(ch) for ch in value if ch.isdigit()]
@@ -657,6 +677,57 @@ PROMPT_LIBRARY = {
         - ใช้ mark down ต่างๆ เพื่อเน้นคำให้ผู้ใช้อ่านง่าย **สำคัญมาก**
         - ห้ามให้คำแนะนำผิดกฎหมาย อันตราย หรือคำแนะนำทางการแพทย์แทนแพทย์""",
     },
+    "TAROT_READING": {
+        "system": """คุณคือ "แม่หมอไพ่ยิปซี AI" แห่ง MuteGPT ผู้เชี่ยวชาญการอ่านไพ่ทาโรต์เชิงสัญลักษณ์และการให้คำปรึกษาอย่างมีเหตุผล
+
+        ### [Context & Inputs]
+        - ผู้รับคำทำนาย: {name}
+        {name_context}
+        - วันเกิด: {birthdate}
+        - หมวดทำนาย: {category_label} ({category})
+        - รูปแบบย่อย: {subcategory_label}
+        - รูปแบบการกางไพ่: {spread_type}
+        - ไพ่ที่เปิดได้:
+        {cards_context}
+
+        ### [Rules & Tone]
+        - ตอบเป็นภาษาไทย โทนอ่อนโยน ลึกลับพอดี อ่านง่าย และไม่งมงายเกินจริง
+        - ห้ามขึ้นต้นด้วยคำทักทายหรือแนะนำตัว ให้เริ่มที่คำอ่านไพ่ทันที
+        - ใช้ชื่อ "{name}" อย่างเป็นธรรมชาติเมื่อเหมาะสม
+        - อ่านจากไพ่ที่เปิดได้และคำถามล่าสุดเป็นหลัก ห้ามแต่งชื่อไพ่เพิ่มเอง
+        - ห้ามฟันธง 100% ให้ใช้คำว่า "มีแนวโน้ม", "หน้าไพ่ชี้ว่า", "พลังงานตอนนี้คล้ายกับ..."
+        - ถ้าเป็นสุขภาพ ให้ย้ำว่าเป็นคำแนะนำเชิงพลังงาน/การดูแลตัวเอง ไม่แทนแพทย์
+        - ใช้ Markdown ให้อ่านง่าย ความยาวประมาณ 180-260 คำ
+
+        ### [Output Structure]
+        # หน้าไพ่กำลังบอกอะไร
+        (ตีความภาพรวมจากไพ่และหมวด)
+
+        # คำตอบต่อคำถาม
+        (ตอบคำถามของผู้ใช้ให้ตรงจุด)
+
+        # คำแนะนำจากไพ่
+        (ข้อแนะนำที่นำไปใช้ได้จริง)""",
+    },
+    "TAROT_FOLLOWUP": {
+        "system": """คุณคือ "แม่หมอไพ่ยิปซี AI" แห่ง MuteGPT ตอบคำถามต่อเนื่องจากไพ่ชุดเดิม
+
+        ### [Context & Inputs]
+        - ผู้รับคำทำนาย: {name}
+        {name_context}
+        - วันเกิด: {birthdate}
+        - หมวดทำนาย: {category_label} ({category})
+        - รูปแบบย่อย: {subcategory_label}
+        - ไพ่ชุดเดิม:
+        {cards_context}
+
+        ### [Rules]
+        - ตอบต่อเนื่องจากไพ่เดิม ห้ามอ่านใหม่ทั้งชุดตั้งแต่ต้น
+        - ตอบคำถามล่าสุดให้ตรงประเด็น โดยอ้างไพ่ที่เกี่ยวข้องเท่านั้น
+        - ใช้ Markdown ได้ ความยาวประมาณ 100-160 คำ
+        - ไม่ฟันธง 100% และไม่สร้างความกลัว
+        - ห้ามขึ้นต้นด้วยคำทักทาย""",
+    },
 }
 
 @app.post("/api/v1/horoscope")
@@ -894,6 +965,61 @@ async def get_thai_astrology(req: ThaiAstrologyRequest):
     except Exception as e:
         error_message = str(e)
         print(f"Thai astrology error: {error_message}")
+
+        if "429" in error_message or "quota" in error_message.lower():
+            raise HTTPException(
+                status_code=429,
+                detail="Gemini API quota exceeded. Please wait and try again later, or check the Gemini API plan and billing settings."
+            )
+
+        raise HTTPException(status_code=500, detail=error_message)
+
+@app.post("/api/v1/tarot-reading")
+async def get_tarot_reading(req: TarotRequest):
+    try:
+        display_name = get_display_name(req.name, req.full_name, req.nickname)
+        name_context = get_name_context(req.name, req.full_name, req.nickname)
+        cards_context = "\n".join([
+            f"- {card.position or f'ใบที่ {idx + 1}'}: {card.name} ({card.type or 'ไม่ระบุชุดไพ่'}) - {card.meaning or 'ไม่มีคำอธิบายตั้งต้น'}"
+            for idx, card in enumerate(req.cards)
+        ]) or "- ยังไม่มีไพ่ที่เปิด"
+        prompt_key = "TAROT_FOLLOWUP" if req.mode == "TAROT_FOLLOWUP" else "TAROT_READING"
+        system_instruction = PROMPT_LIBRARY[prompt_key]["system"].format(
+            name=display_name,
+            name_context=name_context,
+            birthdate=req.birthdate or "ไม่ระบุ",
+            category=req.category,
+            category_label=req.category_label,
+            subcategory_label=req.subcategory_label or "ไม่มี",
+            spread_type=req.spread_type,
+            cards_context=cards_context,
+        )
+
+        if req.mode == "TAROT_FOLLOWUP":
+            user_prompt = f"""
+ผู้ใช้ถามต่อจากไพ่ชุดเดิมว่า: {req.question}
+
+ช่วยตอบแบบบทสนทนาต่อเนื่องโดยอิงจากไพ่ชุดเดิมเท่านั้น
+"""
+        else:
+            user_prompt = f"""
+คำถาม/เจตนาของผู้ใช้: {req.question}
+
+ช่วยอ่านไพ่ให้ตรงกับหมวด {req.category_label} และรูปแบบ {req.subcategory_label or req.spread_type}
+"""
+
+        response = model.generate_content(system_instruction + "\n" + user_prompt)
+
+        return {
+            "prediction": response.text,
+            "status": "success",
+            "category": req.category,
+            "category_label": req.category_label,
+            "cards": [card.dict() for card in req.cards],
+        }
+    except Exception as e:
+        error_message = str(e)
+        print(f"Tarot reading error: {error_message}")
 
         if "429" in error_message or "quota" in error_message.lower():
             raise HTTPException(
