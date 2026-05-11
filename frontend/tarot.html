@@ -8,10 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         /* ธีมสีม่วงลึกลับ (Mystic Purple) */
         :root {
@@ -129,9 +129,7 @@
             overflow: hidden;
         }
         .card-back {
-            background: linear-gradient(135deg, #2e1065, #4c1d95);
-            background-image: radial-gradient(circle at center, rgba(255,255,255,0.15) 1px, transparent 1px);
-            background-size: 8px 8px;
+            background: #12051f url("assets/backside_card.jpg") center / cover no-repeat;
             border: 1px solid rgba(168, 85, 247, 0.5);
         }
         .card-front {
@@ -472,12 +470,16 @@
         };
         let selectedCardsData = [];
         let availableDeck = [];
+        const tarotHistoryCache = new Map();
+        let currentTarotSessionId = null;
+        let hasShownTarotSetupWarning = false;
 
         // ----------------------------------------------------
         // ชุดข้อมูลไพ่ 78 ใบ (ดึงภาพจริงจาก Public Domain)
         // ----------------------------------------------------
         const allTarotDeck = [];
         let cardIdCount = 1;
+        const tarotAssetBase = 'assets/tarot-cards';
         
         const majorArcana = [
             "The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor", "The Hierophant", 
@@ -485,22 +487,43 @@
             "The Hanged Man", "Death", "Temperance", "The Devil", "The Tower", "The Star", 
             "The Moon", "The Sun", "Judgement", "The World"
         ];
+        const majorArcanaFiles = [
+            "00-the-fool.png", "01-the-magician.png", "02-the-high-priestess.png", "03-the-empress.png", "04-the-emperor.png", "05-the-hierophant.png",
+            "06-the-lovers.png", "07-the-chariot.png", "08-strength.png", "09-the-hermit.png", "10-wheel-of-fortune.png", "11-justice.png",
+            "12-the-hanged-man.png", "13-death.png", "14-temperance.png", "15-the-devil.png", "16-the-tower.png", "17-the-star.png",
+            "18-the-moon.png", "19-the-sun.png", "20-judgement.png", "21-the-world.png"
+        ];
         
-        // วนลูปสร้างไพ่ Major Arcana (ar00.jpg - ar21.jpg)
+        // วนลูปสร้างไพ่ Major Arcana จากไฟล์ใน assets/tarot-cards
         majorArcana.forEach((name, index) => {
-            let numStr = index < 10 ? '0' + index : index;
             allTarotDeck.push({
                 id: cardIdCount++,
                 name: name,
                 type: 'major',
-                imgUrl: `https://sacred-texts.com/tarot/pkt/img/ar${numStr}.jpg`,
+                imgUrl: `${tarotAssetBase}/Major_arcana/${majorArcanaFiles[index]}`,
                 meaning: `ไพ่ชุดหลัก (Major Arcana) พลังงานและจุดเปลี่ยนสำคัญ`
             });
         });
 
         const suits = ["Wands", "Cups", "Swords", "Pentacles"];
-        const suitPrefixes = {"Wands": "wa", "Cups": "cu", "Swords": "sw", "Pentacles": "pe"};
+        const suitFolders = {"Wands": "Wands", "Cups": "Cups", "Swords": "Swords", "Pentacles": "Pentacles"};
         const ranks = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Page", "Knight", "Queen", "King"];
+        const rankFileNames = {
+            "Ace": "ace",
+            "2": "two",
+            "3": "three",
+            "4": "four",
+            "5": "five",
+            "6": "six",
+            "7": "seven",
+            "8": "eight",
+            "9": "nine",
+            "10": "ten",
+            "Page": "page",
+            "Knight": "knight",
+            "Queen": "queen",
+            "King": "king",
+        };
         
         // วนลูปสร้างไพ่ Minor Arcana 
         suits.forEach(suit => {
@@ -509,14 +532,13 @@
                             : suit === 'Swords' ? 'สติปัญญา ปัญหา และการตัดสินใจ' 
                             : 'เงินทอง ทรัพย์สิน และความมั่นคง';
             
-            ranks.forEach((rank, index) => {
-                let rankNum = index + 1;
-                let numStr = rankNum < 10 ? '0' + rankNum : rankNum;
+            ranks.forEach((rank) => {
+                const fileName = `${rankFileNames[rank]}-of-${suit.toLowerCase()}.png`;
                 allTarotDeck.push({
                     id: cardIdCount++,
                     name: `${rank} of ${suit}`,
                     type: suit.toLowerCase(),
-                    imgUrl: `https://sacred-texts.com/tarot/pkt/img/${suitPrefixes[suit]}${numStr}.jpg`, 
+                    imgUrl: `${tarotAssetBase}/Minor_arcana/${suitFolders[suit]}/${fileName}`,
                     meaning: `ไพ่ชุดรอง (Minor Arcana) สื่อถึง${suitMeaning}`
                 });
             });
@@ -587,6 +609,7 @@
         }
 
         function appendAIMessage(text, customContent = '') {
+            const htmlContent = window.marked ? marked.parse(String(text || '')) : text;
             chatMessages.insertAdjacentHTML('beforeend', `
               <div class="flex gap-3 msg-animate w-full">
                 <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[rgb(var(--c-primary))] to-[rgb(var(--c-dark))] border border-[rgb(var(--c-accent))] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgb(var(--c-primary)/0.3)] mt-1 theme-transition">
@@ -595,13 +618,393 @@
                 <div class="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] w-full">
                   <span class="text-xs text-[rgb(var(--c-light))] ml-1 theme-transition">แม่หมอไพ่ยิปซี AI</span>
                   <div class="bg-[#1a0f2e]/90 p-4 rounded-2xl rounded-tl-sm border border-[rgb(var(--c-primary)/0.3)] text-slate-200 text-sm md:text-base leading-relaxed shadow-lg overflow-hidden w-full markdown-content theme-transition">
-                    ${text}
+                    ${htmlContent}
                     ${customContent}
                   </div>
                 </div>
               </div>`);
             lucide.createIcons();
             scrollToBottom();
+        }
+
+        async function getUserContext() {
+            try {
+                const waitForClient = async () => {
+                    for (let i = 0; i < 30; i++) {
+                        if (typeof supabaseClient !== 'undefined' && supabaseClient) return supabaseClient;
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                    return null;
+                };
+                const client = await waitForClient();
+                if (!client) return { user: null, profile: {} };
+
+                const { data: { session } } = await client.auth.getSession();
+                if (!session?.user) return { user: null, profile: {} };
+
+                const { data: profileData } = await client
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+
+                currentUser = session.user;
+                currentProfile = profileData || {};
+                return { user: currentUser, profile: currentProfile };
+            } catch (err) {
+                console.error('Unable to load user context:', err);
+                return { user: null, profile: {} };
+            }
+        }
+
+        function isMissingTarotTableError(error) {
+            const message = `${error?.code || ""} ${error?.message || ""} ${error?.details || ""}`;
+            return message.includes('42P01') || message.includes('tarot_sessions') || message.includes('tarot_messages') || message.includes('tarot_readings');
+        }
+
+        function showTarotSetupWarning(error) {
+            if (hasShownTarotSetupWarning || !isMissingTarotTableError(error)) return;
+            hasShownTarotSetupWarning = true;
+            appendAIMessage('ระบบประวัติไพ่ยิปซียังไม่พร้อมใช้งาน เพราะยังไม่ได้สร้างตาราง Tarot ใน Supabase ตอนนี้ยังทำนายได้ตามปกติ แต่ประวัติจะยังไม่ถูกบันทึกจนกว่าจะรันไฟล์ `supabase/tarot_schema.sql` ใน Supabase SQL Editor');
+        }
+
+        function buildTarotSessionTitle(question) {
+            const compact = String(question || 'ไม่มีคำถาม').replace(/\s+/g, ' ').trim();
+            const label = userData.subCategoryName || userData.categoryName || 'ไพ่ยิปซี';
+            return `${label}: ${compact.slice(0, 36)}${compact.length > 36 ? '...' : ''}`;
+        }
+
+        function getCardsPayload(cards) {
+            const labels = cards.length === 3 ? getSlotLabels() : ['ไพ่ที่เลือก'];
+            return cards.map((card, idx) => ({
+                name: card.name,
+                type: card.type,
+                meaning: card.meaning,
+                imgUrl: card.imgUrl,
+                position: labels[idx] || `ใบที่ ${idx + 1}`,
+            }));
+        }
+
+        async function createTarotSession(question) {
+            const { user } = await getUserContext();
+            if (!user) return null;
+
+            const { data, error } = await supabaseClient
+                .from('tarot_sessions')
+                .insert({
+                    user_id: user.id,
+                    category: userData.categoryKey,
+                    category_label: userData.categoryName,
+                    subcategory: userData.subCategoryKey || null,
+                    subcategory_label: userData.subCategoryName || null,
+                    spread_type: userData.spreadType,
+                    question_input: question,
+                    title: buildTarotSessionTitle(question),
+                })
+                .select('id')
+                .single();
+
+            if (error) {
+                showTarotSetupWarning(error);
+                throw error;
+            }
+
+            currentTarotSessionId = data.id;
+            return data.id;
+        }
+
+        async function saveTarotMessage(role, content) {
+            if (!currentTarotSessionId || !currentUser?.id || !content) return;
+
+            const { error } = await supabaseClient
+                .from('tarot_messages')
+                .insert({
+                    session_id: currentTarotSessionId,
+                    user_id: currentUser.id,
+                    role,
+                    content,
+                });
+
+            if (error) {
+                showTarotSetupWarning(error);
+                console.error('Unable to save tarot message:', error);
+            }
+        }
+
+        async function saveTarotReading(cards, prediction) {
+            if (!currentTarotSessionId || !currentUser?.id || !prediction) return;
+
+            const { error } = await supabaseClient
+                .from('tarot_readings')
+                .insert({
+                    session_id: currentTarotSessionId,
+                    user_id: currentUser.id,
+                    category: userData.categoryKey,
+                    subcategory: userData.subCategoryKey || null,
+                    spread_type: userData.spreadType,
+                    question_input: userData.question || 'ไม่มี',
+                    cards: getCardsPayload(cards),
+                    prediction,
+                });
+
+            if (error) {
+                showTarotSetupWarning(error);
+                console.error('Unable to save tarot reading:', error);
+            }
+        }
+
+        async function touchTarotSession() {
+            if (!currentTarotSessionId) return;
+            const { error } = await supabaseClient
+                .from('tarot_sessions')
+                .update({ updated_at: new Date().toISOString() })
+                .eq('id', currentTarotSessionId);
+
+            if (error) {
+                showTarotSetupWarning(error);
+                console.error('Unable to update tarot session:', error);
+            }
+        }
+
+        async function requestTarotReading(question, cards, mode = 'TAROT_READING') {
+            const { profile } = await getUserContext();
+            const res = await fetch('/api/v1/tarot-reading', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: profile.nickname || profile.full_name || 'ผู้ใช้',
+                    full_name: profile.full_name || '',
+                    nickname: profile.nickname || '',
+                    birthdate: profile.birth_date || '',
+                    category: userData.categoryKey,
+                    category_label: userData.categoryName,
+                    subcategory: userData.subCategoryKey || '',
+                    subcategory_label: userData.subCategoryName || '',
+                    spread_type: userData.spreadType,
+                    question,
+                    cards: getCardsPayload(cards),
+                    mode,
+                })
+            });
+
+            const contentType = res.headers.get('content-type') || '';
+            const data = contentType.includes('application/json')
+                ? await res.json()
+                : { detail: await res.text() };
+
+            if (!res.ok) throw new Error(data.detail || `API error ${res.status}`);
+            return data;
+        }
+
+        function buildCardsSummaryHTML(cards) {
+            let cardsSummaryHTML = `<div class="space-y-4 my-4 bg-black/20 p-4 rounded-xl border border-purple-500/30 text-sm">`;
+            if (cards.length === 3) {
+                const labels = getSlotLabels();
+                const badgeColors = ['bg-purple-900/50 text-purple-200', 'bg-fuchsia-900/50 text-fuchsia-200', 'bg-indigo-900/50 text-indigo-200'];
+                cards.forEach((card, idx) => {
+                    cardsSummaryHTML += `
+                        <div class="flex gap-4 items-start">
+                            <div class="w-14 h-20 md:w-20 md:h-32 shrink-0 border border-purple-500/50 rounded overflow-hidden shadow-md">
+                                <img src="${card.imgUrl}" class="w-full h-full object-cover" alt="${escapeHtml(card.name)}">
+                            </div>
+                            <div>
+                                <span class="text-[10px] md:text-xs font-bold px-2 py-0.5 rounded ${badgeColors[idx]} border border-purple-500/30">${labels[idx]}</span>
+                                <div class="font-bold text-amber-400 mt-1.5 text-base">${escapeHtml(card.name)}</div>
+                                <div class="text-slate-300 text-xs md:text-sm mt-1 leading-relaxed"><i>${escapeHtml(card.meaning)}</i></div>
+                            </div>
+                        </div>`;
+                });
+            } else if (cards[0]) {
+                cardsSummaryHTML += `
+                    <div class="flex gap-4 items-start">
+                        <div class="w-16 h-24 md:w-20 md:h-32 shrink-0 border border-purple-500/50 rounded overflow-hidden shadow-md">
+                            <img src="${cards[0].imgUrl}" class="w-full h-full object-cover" alt="${escapeHtml(cards[0].name)}">
+                        </div>
+                        <div>
+                            <span class="text-[10px] md:text-xs font-bold px-2 py-0.5 rounded bg-purple-900/50 text-purple-200 border border-purple-500/30">ไพ่ที่เลือก</span>
+                            <div class="font-bold text-amber-400 mt-1.5 text-base md:text-lg">${escapeHtml(cards[0].name)}</div>
+                            <div class="text-slate-300 text-xs md:text-sm mt-1 leading-relaxed"><i>${escapeHtml(cards[0].meaning)}</i></div>
+                        </div>
+                    </div>`;
+            }
+            return `${cardsSummaryHTML}</div>`;
+        }
+
+        function appendTarotReadingMessage(cards, prediction) {
+            const content = `<b>หน้าไพ่ที่คุณเปิดได้:</b>${buildCardsSummaryHTML(cards)}<b>คำทำนายจากแม่หมอ:</b><br>${window.marked ? marked.parse(String(prediction || '')) : prediction}`;
+            appendAIMessage(content);
+        }
+
+        function appendFollowUpOptions() {
+            const followUpResponse = `
+                <div class="p-4 bg-purple-900/20 border border-purple-500/30 rounded-xl text-center">
+                    <p class="text-purple-200 mb-4 text-sm md:text-base">ต้องการทำสิ่งใดต่อไปคะ?</p>
+                    <div class="flex flex-col md:flex-row justify-center gap-3">
+                        <button onclick="window.askFollowUpQuestion(this)" class="px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white rounded-full font-bold shadow-md transition-all hover:scale-105 text-sm md:text-base flex-1">
+                            ถามเพิ่มจากไพ่เดิม
+                        </button>
+                        <button onclick="window.prepareNewQuestion(this)" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-full font-bold shadow-md transition-all hover:scale-105 text-sm md:text-base flex-1">
+                            ตั้งคำถามและเปิดไพ่ใหม่
+                        </button>
+                    </div>
+                </div>`;
+            appendAIMessage(followUpResponse);
+        }
+
+        function appendTarotHistoryMessage(sessions) {
+            document.getElementById('tarot-history-panel')?.remove();
+            if (!sessions.length) return;
+
+            const rows = sessions.map((session) => {
+                tarotHistoryCache.set(session.id, session);
+                const updatedAt = new Date(session.updated_at).toLocaleDateString('th-TH', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                });
+                return `
+                    <div id="tarot-history-session-${session.id}" class="flex items-stretch gap-2">
+                        <button onclick="loadTarotSession('${session.id}')"
+                            class="flex-1 text-left p-3 rounded-xl border border-purple-500/20 bg-purple-950/25 hover:bg-purple-900/35 transition-colors min-w-0">
+                            <div class="font-semibold text-purple-100 truncate">${escapeHtml(session.title)}</div>
+                            <div class="text-xs text-slate-400 mt-1">${updatedAt}</div>
+                        </button>
+                        <button onclick="deleteTarotSession(event, '${session.id}')"
+                            class="w-11 rounded-xl border border-red-500/25 bg-red-950/30 text-red-300 hover:bg-red-900/40 hover:text-red-100 transition-colors flex items-center justify-center"
+                            title="ลบประวัตินี้">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>`;
+            }).join('');
+
+            chatMessages.insertAdjacentHTML('beforeend', `
+                <div id="tarot-history-panel" class="flex gap-3 msg-animate w-full">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-indigo-900 border border-purple-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)] mt-1">
+                        <i data-lucide="history" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div class="flex flex-col gap-2 max-w-[85%] md:max-w-[75%] w-full">
+                        <span class="text-xs text-purple-300 ml-1">ประวัติเดิม</span>
+                        <div class="bg-[#1a0f2e]/90 p-4 rounded-2xl rounded-tl-sm border border-purple-500/30 text-slate-200 text-sm shadow-lg">
+                            <div class="font-semibold text-purple-100 mb-3">เคยเปิดไพ่หมวดนี้แล้ว จะดูต่อจากรายการเก่าก็ได้</div>
+                            <div class="space-y-2">${rows}</div>
+                        </div>
+                    </div>
+                </div>`);
+            lucide.createIcons();
+            scrollToBottom();
+        }
+
+        async function loadCategoryHistory(categoryKey) {
+            const { user } = await getUserContext();
+            if (!user) return;
+
+            const { data, error } = await supabaseClient
+                .from('tarot_sessions')
+                .select('id, category, category_label, subcategory, subcategory_label, spread_type, question_input, title, updated_at')
+                .eq('user_id', user.id)
+                .eq('category', categoryKey)
+                .order('updated_at', { ascending: false })
+                .limit(5);
+
+            if (error) {
+                showTarotSetupWarning(error);
+                console.error('Unable to load tarot history:', error);
+                return;
+            }
+
+            const previousSessions = (data || []).filter((session) => session.id !== currentTarotSessionId);
+            appendTarotHistoryMessage(previousSessions);
+        }
+
+        async function loadTarotSession(sessionId) {
+            const session = tarotHistoryCache.get(sessionId);
+            if (!session) return;
+
+            userData.categoryKey = session.category;
+            userData.categoryName = session.category_label;
+            userData.subCategoryKey = session.subcategory || '';
+            userData.subCategoryName = session.subcategory_label || '';
+            userData.spreadType = session.spread_type;
+            userData.question = session.question_input;
+            currentTarotSessionId = session.id;
+            chatState = 'READING_COMPLETE';
+
+            document.getElementById('category-selection').style.display = 'none';
+            document.getElementById('tarot-history-panel')?.remove();
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+            userInput.placeholder = 'เลือกถามเพิ่มจากไพ่เดิม หรือเปิดไพ่ใหม่ได้เลย...';
+
+            appendAIMessage(`โหลดประวัติ **${escapeHtml(session.title)}** แล้ว`);
+
+            const { data, error } = await supabaseClient
+                .from('tarot_messages')
+                .select('role, content, created_at')
+                .eq('session_id', sessionId)
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                showTarotSetupWarning(error);
+                console.error('Unable to load tarot messages:', error);
+                return;
+            }
+
+            (data || []).forEach((message) => {
+                if (message.role === 'user') appendUserMessage(escapeHtml(message.content));
+                else appendAIMessage(message.content);
+            });
+
+            const { data: readings, error: readingsError } = await supabaseClient
+                .from('tarot_readings')
+                .select('cards')
+                .eq('session_id', sessionId)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (readingsError) {
+                showTarotSetupWarning(readingsError);
+                console.error('Unable to load tarot reading cards:', readingsError);
+            } else {
+                selectedCardsData = (readings?.[0]?.cards || []).map(card => ({
+                    name: card.name,
+                    type: card.type || '',
+                    meaning: card.meaning || '',
+                    imgUrl: card.imgUrl || '',
+                }));
+            }
+
+            appendFollowUpOptions();
+        }
+
+        async function deleteTarotSession(event, sessionId) {
+            event?.stopPropagation();
+
+            const session = tarotHistoryCache.get(sessionId);
+            const label = session?.title || 'ประวัตินี้';
+            const confirmed = window.confirm(`ลบ "${label}" และข้อความทั้งหมดในประวัตินี้ใช่ไหม?`);
+            if (!confirmed) return;
+
+            const { error } = await supabaseClient
+                .from('tarot_sessions')
+                .delete()
+                .eq('id', sessionId);
+
+            if (error) {
+                showTarotSetupWarning(error);
+                appendAIMessage('ลบประวัติไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+                console.error('Unable to delete tarot session:', error);
+                return;
+            }
+
+            tarotHistoryCache.delete(sessionId);
+            document.getElementById(`tarot-history-session-${sessionId}`)?.remove();
+
+            if (currentTarotSessionId === sessionId) {
+                currentTarotSessionId = null;
+                chatState = 'AWAITING_CATEGORY';
+            }
+
+            appendAIMessage(`ลบประวัติ **${escapeHtml(label)}** แล้ว`);
         }
 
         // ฟังก์ชันช่วยหา Label ของไพ่แต่ละใบตามโหมด
@@ -622,6 +1025,11 @@
             userData.categoryKey = key;
             userData.categoryName = name;
             userData.categoryDesc = desc;
+            userData.subCategoryKey = '';
+            userData.subCategoryName = '';
+            userData.question = '';
+            currentTarotSessionId = null;
+            tarotHistoryCache.clear();
             
             // แยกประเภทการกางไพ่ (ดวงรายวัน = Wheel 1 ใบ, 3 สถานการณ์ = Wheel 3 ใบ, โหมดอื่นๆ = Fan 1 ใบ)
             userData.spreadType = key === 'three_situations' ? 'wheel3' : key === 'daily' ? 'wheel1' : 'fan1';
@@ -629,6 +1037,7 @@
             document.getElementById('category-selection').style.display = 'none';
 
             appendUserMessage(`ฉันต้องการดูหมวด: <b>${name}</b>`);
+            loadCategoryHistory(key);
             showTyping(true);
 
             setTimeout(() => {
@@ -706,7 +1115,7 @@
         }
 
         // 2. พิมพ์คำถาม แล้วแสดงวงล้อ/พัดไพ่
-        function sendMessage() {
+        async function sendMessage() {
             const text = userInput.value.trim();
             if (!text) return;
 
@@ -724,25 +1133,26 @@
                 userInput.disabled = true;
                 sendBtn.disabled = true;
 
-                setTimeout(() => {
+                await saveTarotMessage('user', text);
+
+                try {
+                    const data = await requestTarotReading(text, selectedCardsData, 'TAROT_FOLLOWUP');
+                    const reply = data.prediction || data.result || data.message;
                     showTyping(false);
                     userInput.disabled = false;
                     sendBtn.disabled = false;
                     userInput.focus();
-                    
-                    let cardNames = selectedCardsData.map(c => c.name).join(', ');
-                    const response = `
-                        <div class="bg-black/40 p-3 rounded-lg border border-purple-500/30 text-[11px] font-mono text-purple-300 my-2 mb-4">
-                            <b>[Context Sent to AI]</b><br>
-                            คำถามต่อเนื่อง: ${text}<br>
-                            อ้างอิงไพ่เดิม: ${cardNames}
-                        </div>
-                        <b>แม่หมอขอตอบเพิ่มเติมนะคะ:</b><br><br>
-                        <span class="text-amber-200">(คำทำนายเจาะลึกจาก Gemini อิงจากไพ่ ${cardNames} จะแสดงตรงนี้)</span><br><br>
-                        <i>มีอะไรสงสัยเกี่ยวกับไพ่ชุดนี้อีกไหมคะ ถามได้ตลอดเลยนะ 💜</i>
-                    `;
-                    appendAIMessage(response);
-                }, 2500);
+                    appendAIMessage(reply);
+                    await saveTarotMessage('assistant', reply);
+                    await touchTarotSession();
+                } catch (err) {
+                    showTyping(false);
+                    userInput.disabled = false;
+                    sendBtn.disabled = false;
+                    userInput.focus();
+                    appendAIMessage('ขออภัยค่ะ ระบบอ่านไพ่กำลังมีปัญหา กรุณาลองใหม่อีกครั้ง');
+                    console.error(err);
+                }
             }
             // ถ้าอ่านคำทำนายจบแล้ว แต่ผู้ใช้พิมพ์มาเอง (ถึงจะปิด input ไว้แล้วก็ตาม เผื่อหลุดมา)
             else if (chatState === 'READING_COMPLETE') {
@@ -1181,115 +1591,47 @@
         };
 
         // 5. ส่งให้ AI ทำนาย
-        function generatePrediction(cards) {
+        async function generatePrediction(cards) {
             showTyping(true);
             
             // ล็อกปุ่มและช่องแชทเอาไว้ก่อนระหว่างรอรับคำถามใหม่
             userInput.disabled = true;
             userInput.placeholder = "รอรับคำทำนายจากแม่หมอ...";
 
-            setTimeout(() => {
-                showTyping(false);
-
-                let cardsSummaryHTML = `<div class="space-y-4 my-4 bg-black/20 p-4 rounded-xl border border-purple-500/30 text-sm">`;
-                
-                // พ่น UI สำหรับไพ่ 3 ใบ
-                if (cards.length === 3) {
-                    const labels = getSlotLabels();
-                    const badgeColors = ['bg-purple-900/50 text-purple-200', 'bg-fuchsia-900/50 text-fuchsia-200', 'bg-indigo-900/50 text-indigo-200'];
-                    
-                    cards.forEach((card, idx) => {
-                        cardsSummaryHTML += `
-                            <div class="flex gap-4 items-start">
-                                <div class="w-14 h-20 md:w-20 md:h-32 shrink-0 border border-purple-500/50 rounded overflow-hidden shadow-md">
-                                    <img src="${card.imgUrl}" class="w-full h-full object-cover">
-                                </div>
-                                <div>
-                                    <span class="text-[10px] md:text-xs font-bold px-2 py-0.5 rounded ${badgeColors[idx]} border border-purple-500/30">${labels[idx]}</span>
-                                    <div class="font-bold text-amber-400 mt-1.5 text-base">${card.name}</div>
-                                    <div class="text-slate-300 text-xs md:text-sm mt-1 leading-relaxed"><i>${card.meaning}</i></div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                } 
-                // พ่น UI สำหรับไพ่ 1 ใบ
-                else {
-                    cardsSummaryHTML += `
-                        <div class="flex gap-4 items-start">
-                            <div class="w-16 h-24 md:w-20 md:h-32 shrink-0 border border-purple-500/50 rounded overflow-hidden shadow-md">
-                                <img src="${cards[0].imgUrl}" class="w-full h-full object-cover">
-                            </div>
-                            <div>
-                                <span class="text-[10px] md:text-xs font-bold px-2 py-0.5 rounded bg-purple-900/50 text-purple-200 border border-purple-500/30">ไพ่ที่เลือก</span>
-                                <div class="font-bold text-amber-400 mt-1.5 text-base md:text-lg">${cards[0].name}</div>
-                                <div class="text-slate-300 text-xs md:text-sm mt-1 leading-relaxed"><i>${cards[0].meaning}</i></div>
-                            </div>
-                        </div>
-                    `;
-                }
-                cardsSummaryHTML += `</div>`;
-
-                // ข้อความเกริ่นของ AI 
-                let introText = '';
-                if (cards.length === 3) {
-                    if (userData.subCategoryKey === 'life_path') {
-                        introText = `จากไพ่ทั้ง 3 ใบที่เปิดได้ในรูปแบบ <b>${userData.subCategoryName}</b><br><br>ใบแรก <b>${cards[0].name}</b> สะท้อนถึงจุดเริ่มต้นหรือพลังงานในอดีต ส่วนใบกลาง <b>${cards[1].name}</b> คือสิ่งที่คุณกำลังเผชิญในปัจจุบัน และใบสุดท้าย <b>${cards[2].name}</b> เป็นตัวแทนของทิศทางหรือบทสรุปในอนาคตค่ะ ✨`;
-                    } else if (userData.subCategoryKey === 'problem_solving') {
-                        introText = `จากไพ่ทั้ง 3 ใบที่เปิดได้ในรูปแบบ <b>${userData.subCategoryName}</b><br><br>ใบแรก <b>${cards[0].name}</b> สะท้อนถึงต้นตอหรือสาเหตุของปัญหา ส่วนใบกลาง <b>${cards[1].name}</b> คือแนวทางหรือวิธีแก้ไขที่คุณสามารถทำได้ และใบสุดท้าย <b>${cards[2].name}</b> เป็นตัวแทนของผลลัพธ์ที่จะตามมาค่ะ ✨`;
-                    } else if (userData.subCategoryKey === 'decision_making') {
-                        introText = `จากไพ่ทั้ง 3 ใบที่เปิดได้ในรูปแบบ <b>${userData.subCategoryName}</b><br><br>ใบแรก <b>${cards[0].name}</b> สะท้อนถึงทางเลือก A ส่วนใบกลาง <b>${cards[1].name}</b> สะท้อนถึงทางเลือก B และใบสุดท้าย <b>${cards[2].name}</b> เป็นตัวแทนของคำแนะนำจากดวงดาวเพื่อช่วยให้คุณตัดสินใจได้ดีที่สุดค่ะ ✨`;
-                    } else {
-                         introText = `จากไพ่ทั้ง 3 ใบที่เปิดได้ในหมวด <b>${userData.categoryName}</b><br><br>ใบแรก <b>${cards[0].name}</b> จะสะท้อนถึงจุดเริ่มต้น พลังงานแฝง หรือสถานการณ์ตั้งต้น ส่วนใบกลาง <b>${cards[1].name}</b> คือสิ่งที่คุณกำลังเผชิญ ปัญหา หรือความเชื่อมโยงในปัจจุบัน และใบสุดท้าย <b>${cards[2].name}</b> เป็นตัวแทนของบทสรุป ทิศทาง หรือคำแนะนำจากดวงดาวค่ะ ✨`;
+            try {
+                if (!currentTarotSessionId) {
+                    try {
+                        await createTarotSession(userData.question || 'ไม่มี');
+                    } catch (err) {
+                        console.error('Unable to create tarot session:', err);
                     }
-                } else {
-                    introText = `จากไพ่ <b>${cards[0].name}</b> ที่คุณเลือกในหมวด <b>${userData.categoryName}</b><br><br>ไพ่ใบนี้สะท้อนถึงพลังงานหลักและเป็นคำตอบสำหรับเรื่องราวของคุณโดยตรงค่ะ ✨`;
                 }
 
-                const predictionResponse = `
-                    <div class="bg-black/40 p-3 rounded-lg border border-purple-500/30 text-[11px] font-mono text-purple-300 my-2 mb-4">
-                        <b>[Context Sent to AI]</b><br>
-                        หมวดหมู่: ${userData.categoryName} ${userData.subCategoryName ? `(${userData.subCategoryName})` : ''}<br>
-                        คำถาม: ${userData.question || "ไม่มี"}
-                    </div>
-                    
-                    <b>หน้าไพ่ที่คุณเปิดได้:</b>
-                    ${cardsSummaryHTML}
-                    
-                    <b>คำทำนายจากแม่หมอ:</b><br>
-                    ${introText}<br><br>
-                    <span class="text-amber-200">(คำทำนายแบบละเอียดและเชื่อมโยงหมวดหมู่จาก Gemini จะแสดงตรงนี้)</span><br><br>
-                    <i>อ่านแล้วรู้สึกยังไงบ้างคะ?</i>
-                `;
+                await saveTarotMessage('user', userData.question || 'ไม่มี');
+                const data = await requestTarotReading(userData.question || 'ไม่มี', cards, 'TAROT_READING');
+                const reply = data.prediction || data.result || data.message;
 
-                // ส่งคำทำนายออกไป
-                appendAIMessage(predictionResponse);
+                showTyping(false);
+                appendTarotReadingMessage(cards, reply);
+                await saveTarotMessage('assistant', `<b>หน้าไพ่ที่คุณเปิดได้:</b>${buildCardsSummaryHTML(cards)}<b>คำทำนายจากแม่หมอ:</b><br>${reply}`);
+                await saveTarotReading(cards, reply);
+                await touchTarotSession();
 
-                // เริ่มกระบวนการส่งข้อความถามต่อ (แยกเป็นอีก 1 แชท)
-                showTyping(true);
-                setTimeout(() => {
-                    showTyping(false);
-                    chatState = 'READING_COMPLETE';
-                    userInput.placeholder = "โปรดเลือกรูปแบบคำถามด้านบน...";
-
-                    const followUpResponse = `
-                        <div class="p-4 bg-purple-900/20 border border-purple-500/30 rounded-xl text-center">
-                            <p class="text-purple-200 mb-4 text-sm md:text-base">ต้องการทำสิ่งใดต่อไปคะ?</p>
-                            <div class="flex flex-col md:flex-row justify-center gap-3">
-                                <button onclick="window.askFollowUpQuestion(this)" class="px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white rounded-full font-bold shadow-md transition-all hover:scale-105 text-sm md:text-base flex-1">
-                                    💬 ถามเพิ่มจากไพ่เดิม
-                                </button>
-                                <button onclick="window.prepareNewQuestion(this)" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-full font-bold shadow-md transition-all hover:scale-105 text-sm md:text-base flex-1">
-                                    🃏 ตั้งคำถามและเปิดไพ่ใหม่
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    
-                    appendAIMessage(followUpResponse);
-                }, 2000); // หน่วงเวลาอีก 2 วิให้ดูสมจริง
-
-            }, 3000); 
+                chatState = 'READING_COMPLETE';
+                userInput.disabled = true;
+                sendBtn.disabled = true;
+                userInput.placeholder = "โปรดเลือกรูปแบบคำถามด้านบน...";
+                appendFollowUpOptions();
+            } catch (err) {
+                showTyping(false);
+                chatState = 'AWAITING_QUESTION';
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.placeholder = "ลองถามใหม่อีกครั้งได้เลยค่ะ...";
+                userInput.focus();
+                appendAIMessage("ขออภัยค่ะ ระบบอ่านไพ่กำลังมีปัญหา กรุณาลองใหม่อีกครั้ง");
+                console.error(err);
+            }
         }
 
         // ==========================================
@@ -1346,6 +1688,7 @@
             btnElement.innerText = "เลือกเปิดไพ่ใหม่แล้ว";
 
             appendUserMessage("ต้องการตั้งคำถามและเปิดไพ่ใหม่ค่ะ/ครับ");
+            currentTarotSessionId = null;
 
             showTyping(true);
             setTimeout(() => {
