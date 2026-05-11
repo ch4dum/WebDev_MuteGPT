@@ -11,6 +11,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         /* ธีมสีม่วงลึกลับ (Mystic Purple) */
         :root {
@@ -21,33 +22,95 @@
             --c-dark: 88 28 135;       /* purple-900 */
         }
 
-        body { font-family: 'Prompt', sans-serif; }
+        body { font-family: 'Prompt', sans-serif; transition: background-color 0.8s ease; }
         
         /* Scrollbar อิงตามสีธีม */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgb(var(--c-primary)); border-radius: 4px; transition: background 0.8s ease; }
+        ::-webkit-scrollbar-thumb { background: rgb(var(--c-primary)); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-secondary)); }
 
-        @keyframes spin-slow {
-            from { transform: translate(-50%, -50%) rotate(0deg); }
-            to { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-        .animate-spin-slow { animation: spin-slow 180s linear infinite; }
-
-        @keyframes popIn {
-            0% { opacity: 0; transform: translateY(15px) scale(0.95); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .msg-animate { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-
-        .typing-dot { animation: typing 1.4s infinite ease-in-out both; }
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
         @keyframes typing {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+            30% {
+                transform: translateY(-5px);
+                opacity: 1;
+            }
         }
+        .typing-dot { animation: typing 1.2s infinite; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .msg-animate { animation: fadeSlideIn 0.35s ease forwards; }
+
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        .shimmer-text {
+            background: linear-gradient(90deg, #e9d5ff, #a855f7, #7c3aed, #c084fc, #e9d5ff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+
+        .markdown-content p { margin-bottom: 0.75rem; }
+        .markdown-content p:last-child { margin-bottom: 0; }
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3 {
+            color: rgb(var(--c-light));
+            font-weight: 700;
+            line-height: 1.35;
+            margin: 0.75rem 0 0.5rem;
+        }
+        .markdown-content h1 { font-size: 1.25rem; }
+        .markdown-content h2 { font-size: 1.15rem; }
+        .markdown-content h3 { font-size: 1.05rem; }
+        .markdown-content strong {
+            color: rgb(var(--c-accent));
+            font-weight: 600;
+        }
+        .markdown-content em { color: rgb(var(--c-light)); }
+        .markdown-content ul,
+        .markdown-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .markdown-content ul { list-style-type: disc; }
+        .markdown-content ol { list-style-type: decimal; }
+        .markdown-content li { margin-bottom: 0.25rem; }
+        .markdown-content blockquote {
+            border-left: 3px solid rgb(var(--c-primary));
+            padding-left: 0.9rem;
+            margin: 0.75rem 0;
+            color: rgb(var(--c-light));
+            background: rgb(var(--c-dark) / 0.18);
+            border-radius: 0.5rem;
+        }
+        .markdown-content code {
+            background: rgb(15 23 42 / 0.75);
+            color: rgb(var(--c-light));
+            border: 1px solid rgb(var(--c-primary) / 0.2);
+            border-radius: 0.35rem;
+            padding: 0.1rem 0.35rem;
+            font-size: 0.9em;
+        }
+        .markdown-content hr {
+            border: none;
+            border-top: 1px solid rgb(var(--c-primary) / 0.25);
+            margin: 1rem 0;
+        }
+
+        .theme-transition { transition: all 0.8s ease-in-out; }
 
         /* ---- สไตล์สำหรับไพ่ยิปซี (3D Flip) ---- */
         .tarot-card-container { perspective: 1000px; }
@@ -165,103 +228,108 @@
         }
     </style>
 </head>
-<body class="bg-[#05030a] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-purple-500/30">
+<body class="bg-[#05030a] text-slate-200 h-screen flex flex-col overflow-hidden relative">
 
     <!-- --- BACKGROUND (ใช้ background.jpg เหมือนหน้าอื่นๆ) --- -->
-    <div
-      class="fixed inset-0 z-0 pointer-events-none overflow-hidden"
-      style="
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden" style="
         background:
           linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
           url(&quot;assets/background.jpg&quot;) no-repeat center center fixed;
         background-size: cover;
-      "
-    >
-      <div
-        class="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-red-950/20 rounded-full blur-[150px] mix-blend-screen"
-      ></div>
-      <div
-        class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-rose-900/15 rounded-full blur-[120px] mix-blend-screen"
-      ></div>
-      <div
-        class="absolute inset-0 opacity-[0.03]"
-        style="
+      ">
+        <div
+            class="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-red-950/20 rounded-full blur-[150px] mix-blend-screen">
+        </div>
+        <div
+            class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-rose-900/15 rounded-full blur-[120px] mix-blend-screen">
+        </div>
+        <div class="absolute inset-0 opacity-[0.03]" style="
           background-image: radial-gradient(
             circle at center,
             #ffffff 1px,
             transparent 1px
           );
           background-size: 30px 30px;
-        "
-      ></div>
-    </div>
-
-    <!-- --- BACKGROUND --- -->
-        <div class="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-purple-900/30 rounded-full blur-[150px] mix-blend-screen"></div>
-        <div class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-fuchsia-900/20 rounded-full blur-[120px] mix-blend-screen"></div>
-        <div class="absolute top-[20%] left-[50%] translate-x-[-50%] w-[80%] h-[50%] bg-indigo-900/20 rounded-full blur-[180px] mix-blend-screen"></div>
-
-        <div class="absolute top-1/2 left-1/2 animate-spin-slow w-[800px] h-[800px] md:w-[1200px] md:h-[1200px] opacity-[0.05] pointer-events-none">
-            <svg viewBox="0 0 100 100" class="w-full h-full text-purple-200">
-                <circle cx="50" cy="50" r="49" fill="none" stroke="currentColor" stroke-width="0.2" stroke-dasharray="1, 1"/>
-                <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="0.1"/>
-                <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" stroke-width="0.2"/>
-                <circle cx="50" cy="50" r="32" fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="2, 4"/>
-                <circle cx="50" cy="50" r="15" fill="none" stroke="currentColor" stroke-width="0.1"/>
-                <circle cx="50" cy="50" r="5" fill="none" stroke="currentColor" stroke-width="0.3"/>
-                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(0 50 50)"></line>
-                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(30 50 50)"></line>
-                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(60 50 50)"></line>
-                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(90 50 50)"></line>
-                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(120 50 50)"></line>
-                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(150 50 50)"></line>
-                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(180 50 50)"></line>
-                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(210 50 50)"></line>
-                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(240 50 50)"></line>
-                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(270 50 50)"></line>
-                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(300 50 50)"></line>
-                <line x1="50" y1="15" x2="50" y2="46" stroke="currentColor" stroke-width="0.1" transform="rotate(330 50 50)"></line>
-            </svg>
+        "></div>
+        <div
+            class="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-[rgb(var(--c-dark)/0.4)] rounded-full blur-[150px] mix-blend-screen theme-transition">
+        </div>
+        <div
+            class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-[rgb(var(--c-secondary)/0.2)] rounded-full blur-[120px] mix-blend-screen theme-transition">
+        </div>
+        <div
+            class="absolute top-[20%] left-[50%] translate-x-[-50%] w-[80%] h-[50%] bg-[rgb(var(--c-primary)/0.1)] rounded-full blur-[180px] mix-blend-screen theme-transition">
         </div>
     </div>
 
     <!-- NAVBAR -->
-    <nav class="relative z-20 w-full bg-[#05030a]/80 backdrop-blur-md border-b border-purple-500/30 py-3 shadow-[0_4px_30px_rgba(0,0,0,0.5)] shrink-0">
-        <div class="container mx-auto px-4 flex justify-between items-center max-w-4xl">
-            <div class="flex items-center gap-4">
-                <a href="main.html" class="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+    <nav class="relative z-20 w-full bg-[#05030a]/80 backdrop-blur-md border-b border-[rgb(var(--c-primary)/0.2)] py-3 shadow-[0_4px_30px_rgba(0,0,0,0.5)] shrink-0 theme-transition">
+        <div class="container mx-auto px-4 flex justify-between items-center gap-3 max-w-4xl">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+                <button id="back-btn" type="button" onclick="handleBackNavigation()" class="w-9 h-9 shrink-0 rounded-full hover:bg-white/10 text-slate-400 hover:text-purple-300 transition-colors flex items-center justify-center">
                     <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                </a>
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-purple-900/50 border border-purple-500/50 flex items-center justify-center shadow-[0_0_10px_rgba(168,85,247,0.3)]">
-                        <i data-lucide="layers" class="w-5 h-5 text-purple-300"></i>
+                </button>
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 shrink-0 rounded-full bg-[rgb(var(--c-dark)/0.5)] border border-[rgb(var(--c-primary)/0.3)] flex items-center justify-center shadow-inner theme-transition">
+                        <i data-lucide="layers" class="w-5 h-5 text-[rgb(var(--c-accent))] theme-transition"></i>
                     </div>
-                    <div>
-                        <h1 class="text-xl font-bold text-white leading-none tracking-wide">Tarot Reading 🔮</h1>
-                        <p class="text-[11px] text-purple-300 mt-1">ให้หน้าไพ่เปิดเผยโชคชะตาของคุณ</p>
+                    <div class="min-w-0">
+                        <h1 class="text-lg sm:text-xl font-bold text-white leading-none tracking-wide shimmer-text truncate">Tarot Reading 🔮</h1>
+                        <p class="text-[11px] text-[rgb(var(--c-light))] mt-1 theme-transition truncate">ให้หน้าไพ่เปิดเผยโชคชะตาของคุณ</p>
                     </div>
                 </div>
             </div>
-            <!-- ไอคอนโปรไฟล์ -->
-            <div class="w-8 h-8 rounded-full bg-white/5 border border-purple-500/30 flex items-center justify-center shadow-md">
-                <span class="text-purple-200 text-xs font-bold">P</span>
+            <!-- ปุ่มโปรไฟล์ + Account Popup -->
+            <div class="flex items-center gap-3 relative">
+                <div id="avatar-btn"
+                    class="w-10 h-10 rounded-full flex items-center justify-center border cursor-pointer hover:scale-105 transition-all bg-[rgb(var(--c-dark)/0.5)] border-[rgb(var(--c-primary)/0.3)] shadow-[0_0_15px_rgb(var(--c-primary)/0.2)] theme-transition">
+                    <i data-lucide="user" class="w-5 h-5 text-[rgb(var(--c-accent))] theme-transition"></i>
+                </div>
+                <!-- Account Popup -->
+                <div id="account-popup"
+                    class="absolute top-[calc(100%+10px)] right-0 bg-[#0a0514]/95 backdrop-blur-xl rounded-3xl w-[340px] shadow-[0_10px_40px_rgba(0,0,0,0.8),0_0_20px_rgb(var(--c-primary)/0.2)] border border-[rgb(var(--c-primary)/0.3)] z-[100] overflow-hidden theme-transition"
+                    style="display: none;">
+                    <div class="p-6 text-center relative">
+                        <button id="close-popup"
+                            class="absolute top-4 right-4 bg-transparent border-none text-slate-400 hover:text-[rgb(var(--c-accent))] cursor-pointer transition-colors theme-transition">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                        <div id="popup-email" class="text-slate-50 text-[0.95rem] font-medium mb-1 break-all">loading...</div>
+                        <div id="popup-managed" class="text-slate-400 text-xs mb-6"></div>
+                        <div id="popup-avatar-large"
+                            class="w-20 h-20 rounded-full bg-gradient-to-br from-[rgb(var(--c-dark)/0.8)] to-[rgb(var(--c-primary)/0.5)] border border-[rgb(var(--c-accent)/0.4)] text-[rgb(var(--c-light))] flex items-center justify-center text-4xl mx-auto mb-4 relative shadow-[0_0_15px_rgb(var(--c-primary)/0.4)] theme-transition">
+                            <span id="popup-avatar-letter"></span>
+                            <div class="absolute -bottom-0.5 -right-0.5 bg-[#0a0514] border border-[rgb(var(--c-primary)/0.5)] rounded-full p-1.5 flex theme-transition">
+                                <i data-lucide="camera" class="w-3.5 h-3.5 text-[rgb(var(--c-light))] theme-transition"></i>
+                            </div>
+                        </div>
+                        <div id="popup-greeting"
+                            class="bg-gradient-to-r from-[rgb(var(--c-light))] to-[rgb(var(--c-accent))] bg-clip-text text-transparent text-xl font-bold mb-6 theme-transition">
+                            Hi!</div>
+                        <button onclick="handleLogout()"
+                            class="bg-gradient-to-r from-red-500 to-red-800 text-white py-2 px-5 rounded-full border-none text-sm font-semibold cursor-pointer transition-all shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)] hover:-translate-y-[1px] inline-flex items-center justify-center gap-2">
+                            <i data-lucide="log-out" class="w-4 h-4"></i>
+                            ออกจากระบบ
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
 
     <!-- CHAT AREA -->
-    <main class="relative z-10 flex-1 w-full max-w-4xl mx-auto flex flex-col min-h-0 bg-[#0a0512]/60 backdrop-blur-sm border-x border-purple-500/10 shadow-2xl">
+    <main class="relative z-10 flex-1 w-full max-w-4xl mx-auto flex flex-col min-h-0 bg-[#0a0512]/50 backdrop-blur-sm border-x border-white/5 shadow-2xl">
         
         <div id="chat-messages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scroll-smooth">
             
             <!-- ข้อความต้อนรับ -->
-            <div class="flex gap-3 msg-animate">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-indigo-900 border border-purple-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.4)] mt-1">
+            <div class="flex gap-3 msg-animate" data-persistent="true">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[rgb(var(--c-primary))] to-[rgb(var(--c-dark))] border border-[rgb(var(--c-accent))] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgb(var(--c-primary)/0.35)] mt-1 theme-transition">
                     <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
                 </div>
-                <div class="flex flex-col gap-1 max-w-[90%] md:max-w-[85%] w-full">
-                    <span class="text-xs text-purple-300 ml-1">แม่หมอไพ่ยิปซี AI</span>
-                    <div class="bg-[#1a0f2e]/90 p-4 rounded-2xl rounded-tl-sm border border-purple-500/30 text-slate-200 text-sm md:text-base leading-relaxed shadow-lg">
+                <div class="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] w-full">
+                    <span class="text-xs text-[rgb(var(--c-light))] ml-1 theme-transition">แม่หมอไพ่ยิปซี AI</span>
+                    <div class="bg-[#1a0f2e]/90 p-4 rounded-2xl rounded-tl-sm border border-[rgb(var(--c-primary)/0.3)] text-slate-200 text-sm md:text-base leading-relaxed shadow-lg theme-transition">
                         ยินดีต้อนรับเข้าสู่มิติแห่งไพ่ยิปซีค่ะ ✨<br><br>
                         เพื่อให้ไพ่สะท้อนพลังงานและให้คำตอบที่ตรงจุดที่สุด <b>กรุณาเลือก "หมวดหมู่" ที่คุณต้องการให้ไพ่สื่อถึงในวันนี้ค่ะ</b>
                     </div>
@@ -269,72 +337,84 @@
             </div>
 
             <!-- ตัวเลือกหมวดหมู่ 7 โหมด -->
-            <div id="category-selection" class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pl-14 pr-4 msg-animate" style="animation-delay: 0.5s;">
+            <div id="category-selection" class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pl-14 pr-4 msg-animate" style="animation-delay: 0.4s;">
                 
                 <!-- โหมด 3 สถานการณ์ -->
-                <button onclick="selectCategory('three_situations', 'การอ่านไพ่ 3 สถานการณ์', 'ดูเส้นทางชีวิต การแก้ไขปัญหา การตัดสินใจ')" class="relative w-full md:col-span-2 text-left p-4 rounded-xl border border-amber-500/40 bg-gradient-to-br from-amber-900/30 to-purple-900/10 hover:from-amber-800/40 hover:to-purple-800/20 transition-all flex items-center gap-4 group shadow-[0_0_15px_rgba(245,158,11,0.05)] hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] mt-1 mb-1">
+                <button onclick="selectCategory('three_situations', 'การอ่านไพ่ 3 สถานการณ์', 'ดูเส้นทางชีวิต การแก้ไขปัญหา การตัดสินใจ')" class="relative cat-card w-full md:col-span-2 text-left p-4 rounded-xl border border-amber-400/30 bg-gradient-to-r from-amber-950/30 to-purple-950/20 hover:from-amber-900/40 hover:to-purple-900/30 flex items-center gap-4 group shadow-md mt-1 mb-1">
                     <div class="absolute -top-2.5 right-4 bg-gradient-to-r from-amber-400 to-orange-500 text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md">
                         <i data-lucide="sparkles" class="w-3 h-3"></i> แนะนำ
                     </div>
-                    <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0 shadow-inner">
-                        <i data-lucide="layers" class="w-5 h-5 text-amber-400"></i>
+                    <div class="w-10 h-10 rounded-full bg-amber-400/20 border border-amber-400/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                        <i data-lucide="layers" class="w-5 h-5 text-amber-300"></i>
                     </div>
                     <div class="flex-1">
-                        <div class="font-bold text-amber-200 group-hover:text-amber-100 transition-colors">การอ่านไพ่ 3 สถานการณ์</div>
-                        <div class="text-xs text-amber-200/60 mt-0.5 group-hover:text-amber-100/80 transition-colors">
+                        <div class="font-bold text-amber-200">การอ่านไพ่ 3 สถานการณ์</div>
+                        <div class="text-xs text-slate-400 mt-0.5">
                             ครอบคลุมการดูเส้นทางชีวิต, การแก้ไขปัญหา, หรือการตัดสินใจ
                         </div>
                     </div>
                 </button>
 
                 <!-- แถวที่ 1 (Daily & Love) -->
-                <button onclick="selectCategory('daily', 'ดวงรายวัน', 'ทำนายเรื่องสำคัญ ดูดวงวันนี้')" class="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/30 to-purple-900/5 hover:from-purple-800/40 hover:to-purple-800/10 transition-all flex items-center gap-4 group shadow-[0_0_15px_rgba(168,85,247,0.02)] hover:shadow-[0_0_20px_rgba(168,85,247,0.1)]">
-                    <div class="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"><i data-lucide="sun" class="w-5 h-5 text-purple-400"></i></div>
+                <button onclick="selectCategory('daily', 'ดวงรายวัน', 'ทำนายเรื่องสำคัญ ดูดวงวันนี้')" class="cat-card w-full text-left p-4 rounded-xl border border-purple-500/30 bg-purple-950/25 hover:bg-purple-900/35 flex items-center gap-4 group shadow-md">
+                    <div class="w-10 h-10 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                        <i data-lucide="sun" class="w-5 h-5 text-purple-400"></i>
+                    </div>
                     <div>
-                        <div class="font-bold text-purple-200 group-hover:text-purple-100 transition-colors">ดวงรายวัน</div>
-                        <div class="text-xs text-purple-300/70 mt-0.5 group-hover:text-purple-200/90 transition-colors">ทำนายเรื่องสำคัญ ดูดวงวันนี้</div>
+                        <div class="font-bold text-purple-200">ดวงรายวัน</div>
+                        <div class="text-xs text-slate-400 mt-0.5">ทำนายเรื่องสำคัญ ดูดวงวันนี้</div>
                     </div>
                 </button>
 
-                <button onclick="selectCategory('love', 'ดวงความรัก', 'ความรัก คู่ครอง ปัญหา ทางออก')" class="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/30 to-purple-900/5 hover:from-purple-800/40 hover:to-purple-800/10 transition-all flex items-center gap-4 group shadow-[0_0_15px_rgba(168,85,247,0.02)] hover:shadow-[0_0_20px_rgba(168,85,247,0.1)]">
-                    <div class="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"><i data-lucide="heart" class="w-5 h-5 text-purple-400"></i></div>
+                <button onclick="selectCategory('love', 'ดวงความรัก', 'ความรัก คู่ครอง ปัญหา ทางออก')" class="cat-card w-full text-left p-4 rounded-xl border border-violet-400/30 bg-violet-950/20 hover:bg-violet-900/30 flex items-center gap-4 group shadow-md">
+                    <div class="w-10 h-10 rounded-full bg-violet-400/20 border border-violet-400/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                        <i data-lucide="heart" class="w-5 h-5 text-violet-300"></i>
+                    </div>
                     <div>
-                        <div class="font-bold text-purple-200 group-hover:text-purple-100 transition-colors">ดวงความรัก</div>
-                        <div class="text-xs text-purple-300/70 mt-0.5 group-hover:text-purple-200/90 transition-colors">ความรัก คู่ครอง ปัญหา ทางออก</div>
+                        <div class="font-bold text-violet-200">ดวงความรัก</div>
+                        <div class="text-xs text-slate-400 mt-0.5">ความรัก คู่ครอง ปัญหา ทางออก</div>
                     </div>
                 </button>
 
                 <!-- แถวที่ 2 (Work & Finance) -->
-                <button onclick="selectCategory('work', 'ดวงการงาน อาชีพ', 'ปัญหา อุปสรรค โอกาส ทางแก้')" class="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/30 to-purple-900/5 hover:from-purple-800/40 hover:to-purple-800/10 transition-all flex items-center gap-4 group shadow-[0_0_15px_rgba(168,85,247,0.02)] hover:shadow-[0_0_20px_rgba(168,85,247,0.1)]">
-                    <div class="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"><i data-lucide="briefcase" class="w-5 h-5 text-purple-400"></i></div>
+                <button onclick="selectCategory('work', 'ดวงการงาน อาชีพ', 'ปัญหา อุปสรรค โอกาส ทางแก้')" class="cat-card w-full text-left p-4 rounded-xl border border-fuchsia-500/30 bg-fuchsia-950/20 hover:bg-fuchsia-900/30 flex items-center gap-4 group shadow-md">
+                    <div class="w-10 h-10 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                        <i data-lucide="briefcase" class="w-5 h-5 text-fuchsia-400"></i>
+                    </div>
                     <div>
-                        <div class="font-bold text-purple-200 group-hover:text-purple-100 transition-colors">ดวงการงาน อาชีพ</div>
-                        <div class="text-xs text-purple-300/70 mt-0.5 group-hover:text-purple-200/90 transition-colors">ปัญหา อุปสรรค โอกาส ทางแก้</div>
+                        <div class="font-bold text-fuchsia-200">ดวงการงาน อาชีพ</div>
+                        <div class="text-xs text-slate-400 mt-0.5">ปัญหา อุปสรรค โอกาส ทางแก้</div>
                     </div>
                 </button>
 
-                <button onclick="selectCategory('finance', 'ดวงการเงิน', 'รายได้ หหนี้สิน สภาพคล่อง ปัญหา')" class="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/30 to-purple-900/5 hover:from-purple-800/40 hover:to-purple-800/10 transition-all flex items-center gap-4 group shadow-[0_0_15px_rgba(168,85,247,0.02)] hover:shadow-[0_0_20px_rgba(168,85,247,0.1)]">
-                    <div class="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"><i data-lucide="coins" class="w-5 h-5 text-purple-400"></i></div>
+                <button onclick="selectCategory('finance', 'ดวงการเงิน', 'รายได้ หหนี้สิน สภาพคล่อง ปัญหา')" class="cat-card w-full text-left p-4 rounded-xl border border-indigo-400/30 bg-indigo-950/20 hover:bg-indigo-900/30 flex items-center gap-4 group shadow-md">
+                    <div class="w-10 h-10 rounded-full bg-indigo-400/20 border border-indigo-400/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                        <i data-lucide="coins" class="w-5 h-5 text-indigo-300"></i>
+                    </div>
                     <div>
-                        <div class="font-bold text-purple-200 group-hover:text-purple-100 transition-colors">ดวงการเงิน</div>
-                        <div class="text-xs text-purple-300/70 mt-0.5 group-hover:text-purple-200/90 transition-colors">รายได้ หนี้สิน สภาพคล่อง ปัญหา</div>
+                        <div class="font-bold text-indigo-200">ดวงการเงิน</div>
+                        <div class="text-xs text-slate-400 mt-0.5">รายได้ หนี้สิน สภาพคล่อง ปัญหา</div>
                     </div>
                 </button>
 
                 <!-- แถวที่ 3 (Study & Health) -->
-                <button onclick="selectCategory('study', 'ดวงการเรียน', 'การเรียน การสอบ การปรับปรุง')" class="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/30 to-purple-900/5 hover:from-purple-800/40 hover:to-purple-800/10 transition-all flex items-center gap-4 group shadow-[0_0_15px_rgba(168,85,247,0.02)] hover:shadow-[0_0_20px_rgba(168,85,247,0.1)]">
-                    <div class="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"><i data-lucide="book-open" class="w-5 h-5 text-purple-400"></i></div>
+                <button onclick="selectCategory('study', 'ดวงการเรียน', 'การเรียน การสอบ การปรับปรุง')" class="cat-card w-full text-left p-4 rounded-xl border border-blue-400/30 bg-blue-950/20 hover:bg-blue-900/30 flex items-center gap-4 group shadow-md">
+                    <div class="w-10 h-10 rounded-full bg-blue-400/20 border border-blue-400/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                        <i data-lucide="book-open" class="w-5 h-5 text-blue-300"></i>
+                    </div>
                     <div>
-                        <div class="font-bold text-purple-200 group-hover:text-purple-100 transition-colors">ดวงการเรียน</div>
-                        <div class="text-xs text-purple-300/70 mt-0.5 group-hover:text-purple-200/90 transition-colors">การเรียน การสอบ การปรับปรุง</div>
+                        <div class="font-bold text-blue-200">ดวงการเรียน</div>
+                        <div class="text-xs text-slate-400 mt-0.5">การเรียน การสอบ การปรับปรุง</div>
                     </div>
                 </button>
 
-                <button onclick="selectCategory('health', 'ดวงสุขภาพ โรคภัย', 'เจ็บป่วย อุบัติเหตุ ดูแล ป้องกัน')" class="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/30 to-purple-900/5 hover:from-purple-800/40 hover:to-purple-800/10 transition-all flex items-center gap-4 group shadow-[0_0_15px_rgba(168,85,247,0.02)] hover:shadow-[0_0_20px_rgba(168,85,247,0.1)]">
-                    <div class="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0"><i data-lucide="activity" class="w-5 h-5 text-purple-400"></i></div>
+                <button onclick="selectCategory('health', 'ดวงสุขภาพ โรคภัย', 'เจ็บป่วย อุบัติเหตุ ดูแล ป้องกัน')" class="cat-card w-full text-left p-4 rounded-xl border border-slate-400/30 bg-slate-900/20 hover:bg-slate-800/30 flex items-center gap-4 group shadow-md">
+                    <div class="w-10 h-10 rounded-full bg-slate-400/20 border border-slate-400/30 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                        <i data-lucide="activity" class="w-5 h-5 text-slate-300"></i>
+                    </div>
                     <div>
-                        <div class="font-bold text-purple-200 group-hover:text-purple-100 transition-colors">ดวงสุขภาพ โรคภัย</div>
-                        <div class="text-xs text-purple-300/70 mt-0.5 group-hover:text-purple-200/90 transition-colors">เจ็บป่วย อุบัติเหตุ ดูแล ป้องกัน</div>
+                        <div class="font-bold text-slate-200">ดวงสุขภาพ โรคภัย</div>
+                        <div class="text-xs text-slate-400 mt-0.5">เจ็บป่วย อุบัติเหตุ ดูแล ป้องกัน</div>
                     </div>
                 </button>
 
@@ -344,44 +424,39 @@
         <!-- Typing Indicator -->
         <div id="typing-indicator" class="hidden px-4 md:px-6 pb-4 shrink-0">
             <div class="flex gap-3">
-                <div class="w-8 h-8 rounded-full bg-purple-900/50 border border-purple-400/50 flex items-center justify-center shrink-0">
-                    <i data-lucide="sparkles" class="w-4 h-4 text-purple-200"></i>
+                <div class="w-8 h-8 rounded-full bg-[rgb(var(--c-dark)/0.5)] border border-[rgb(var(--c-accent)/0.5)] flex items-center justify-center shrink-0 theme-transition">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-[rgb(var(--c-light))] theme-transition"></i>
                 </div>
-                <div class="bg-[#1a0f2e]/90 py-3 px-4 rounded-2xl rounded-tl-sm border border-purple-500/30 flex gap-1 items-center w-fit shadow-lg">
-                    <div class="w-2 h-2 rounded-full typing-dot bg-purple-400 opacity-80"></div>
-                    <div class="w-2 h-2 rounded-full typing-dot bg-purple-400 opacity-80"></div>
-                    <div class="w-2 h-2 rounded-full typing-dot bg-purple-400 opacity-80"></div>
+                <div class="bg-[#1a0f2e]/90 py-3 px-4 rounded-2xl rounded-tl-sm border border-[rgb(var(--c-primary)/0.3)] flex gap-1 items-center w-fit shadow-lg theme-transition">
+                    <div class="w-2 h-2 rounded-full typing-dot bg-[rgb(var(--c-accent))] opacity-70 theme-transition"></div>
+                    <div class="w-2 h-2 rounded-full typing-dot bg-[rgb(var(--c-accent))] opacity-70 theme-transition"></div>
+                    <div class="w-2 h-2 rounded-full typing-dot bg-[rgb(var(--c-accent))] opacity-70 theme-transition"></div>
                 </div>
             </div>
         </div>
 
         <!-- INPUT AREA -->
-        <div class="w-full bg-[#05030a]/90 backdrop-blur-xl border-t border-purple-500/30 p-4 shrink-0 relative z-20">
+        <div class="w-full bg-[#05030a]/90 backdrop-blur-xl border-t border-[rgb(var(--c-primary)/0.25)] p-4 shrink-0 relative z-20">
             <div class="max-w-4xl mx-auto relative flex items-center gap-2">
-                <input 
-                    type="text"
-                    id="user-input"
-                    disabled
-                    placeholder="กรุณาเลือกหมวดหมู่การทำนายด้านบนก่อนนะคะ..." 
-                    class="w-full bg-[#0a0512] border border-purple-900/50 focus:border-purple-500 text-white rounded-full py-3 px-6 pr-14 outline-none transition-all placeholder:text-purple-300/40 disabled:opacity-50 disabled:cursor-not-allowed shadow-inner"
-                    onkeydown="if(event.key === 'Enter') { sendMessage(); }"
-                >
-                <button 
-                    id="send-btn"
-                    disabled
-                    onclick="sendMessage()"
-                    class="absolute right-2 top-1.5 w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-600 flex items-center justify-center text-white hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_10px_rgba(168,85,247,0.4)]"
-                >
+                <input type="text" id="user-input" disabled placeholder="กรุณาเลือกหมวดหมู่การทำนายด้านบนก่อนนะคะ..."
+                    class="w-full bg-[#0a0512] border border-slate-700 focus:border-[rgb(var(--c-primary))] text-white rounded-full py-3 px-6 pr-14 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-inner"
+                    onkeydown="if(event.key === 'Enter') { sendMessage(); }" />
+                <button id="send-btn" disabled onclick="sendMessage()"
+                    class="absolute right-2 top-1.5 w-10 h-10 rounded-full bg-gradient-to-r from-[rgb(var(--c-primary))] to-[rgb(var(--c-secondary))] flex items-center justify-center text-white hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_10px_rgb(var(--c-primary)/0.4)] theme-transition">
                     <i data-lucide="send" class="w-4 h-4 ml-1"></i>
                 </button>
             </div>
-            <p class="text-center text-[10px] text-purple-400/50 mt-2">AI ให้คำทำนายผ่านการสุ่มไพ่เพื่อเป็นแนวทาง โปรดใช้วิจารณญาณ</p>
+            <p class="text-center text-[10px] text-slate-500 mt-2">AI ให้คำทำนายผ่านการสุ่มไพ่เพื่อเป็นแนวทาง โปรดใช้วิจารณญาณ</p>
         </div>
 
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
     <script>
         lucide.createIcons();
+        if (window.marked) { marked.setOptions({ breaks: true, gfm: true }); }
 
         // สถานะการแชท
         // AWAITING_CATEGORY -> AWAITING_SUB_CATEGORY -> AWAITING_QUESTION -> AWAITING_CARD_SELECTION -> PROCESSING -> READING_COMPLETE -> FOLLOW_UP_QUESTION
@@ -460,55 +535,71 @@
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         const typingIndicator = document.getElementById('typing-indicator');
+        let currentUser = null;
+        let currentProfile = {};
 
         function scrollToBottom() {
-            setTimeout(() => {
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }, 100);
+            setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 100);
         }
 
         function showTyping(show) {
-            if (show) {
-                typingIndicator.classList.remove('hidden');
-                scrollToBottom();
-            } else {
-                typingIndicator.classList.add('hidden');
-            }
+            if (show) { typingIndicator.classList.remove('hidden'); scrollToBottom(); }
+            else { typingIndicator.classList.add('hidden'); }
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function getUserInitial() {
+            const displayName =
+                currentProfile.full_name ||
+                currentProfile.nickname ||
+                currentUser?.email?.split('@')[0] ||
+                document.querySelector('#avatar-btn span')?.textContent?.trim() ||
+                'U';
+            return displayName.trim().charAt(0).toUpperCase();
+        }
+
+        function handleBackNavigation() {
+            window.location.href = 'main.html';
         }
 
         function appendUserMessage(text) {
-            const msgHTML = `
-                <div class="flex gap-3 justify-end msg-animate">
-                    <div class="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] items-end">
-                        <div class="bg-gradient-to-br from-purple-500 to-fuchsia-600 p-4 rounded-2xl rounded-tr-sm text-white text-sm md:text-base leading-relaxed shadow-[0_0_15px_rgba(168,85,247,0.3)]">
-                            ${text}
-                        </div>
-                    </div>
-                    <div class="w-10 h-10 rounded-full bg-[#1a0f2e] border border-purple-500/50 flex items-center justify-center shrink-0 overflow-hidden">
-                         <span class="text-purple-300 font-bold">P</span>
-                    </div>
+            const userInitial = escapeHtml(getUserInitial());
+            chatMessages.insertAdjacentHTML('beforeend', `
+              <div class="flex gap-3 justify-end msg-animate">
+                <div class="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] items-end">
+                  <div class="bg-gradient-to-br from-[rgb(var(--c-primary))] to-[rgb(var(--c-secondary))] p-4 rounded-2xl rounded-tr-sm text-white text-sm md:text-base leading-relaxed shadow-lg">
+                    ${text}
+                  </div>
                 </div>
-            `;
-            chatMessages.insertAdjacentHTML('beforeend', msgHTML);
+                <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center shrink-0 overflow-hidden">
+                  <span class="text-[rgb(var(--c-light))] font-bold">${userInitial}</span>
+                </div>
+              </div>`);
             scrollToBottom();
         }
 
         function appendAIMessage(text, customContent = '') {
-            const msgHTML = `
-                <div class="flex gap-3 msg-animate w-full">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-indigo-900 border border-purple-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)] mt-1">
-                        <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
-                    </div>
-                    <div class="flex flex-col gap-1 max-w-[95%] md:max-w-[85%] w-full">
-                        <span class="text-xs text-purple-300 ml-1">แม่หมอไพ่ยิปซี AI</span>
-                        <div class="bg-[#1a0f2e]/90 p-4 rounded-2xl rounded-tl-sm border border-purple-500/30 text-slate-200 text-sm md:text-base leading-relaxed shadow-lg w-full overflow-hidden">
-                            ${text}
-                            ${customContent}
-                        </div>
-                    </div>
+            chatMessages.insertAdjacentHTML('beforeend', `
+              <div class="flex gap-3 msg-animate w-full">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[rgb(var(--c-primary))] to-[rgb(var(--c-dark))] border border-[rgb(var(--c-accent))] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgb(var(--c-primary)/0.3)] mt-1 theme-transition">
+                  <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
                 </div>
-            `;
-            chatMessages.insertAdjacentHTML('beforeend', msgHTML);
+                <div class="flex flex-col gap-1 max-w-[85%] md:max-w-[75%] w-full">
+                  <span class="text-xs text-[rgb(var(--c-light))] ml-1 theme-transition">แม่หมอไพ่ยิปซี AI</span>
+                  <div class="bg-[#1a0f2e]/90 p-4 rounded-2xl rounded-tl-sm border border-[rgb(var(--c-primary)/0.3)] text-slate-200 text-sm md:text-base leading-relaxed shadow-lg overflow-hidden w-full markdown-content theme-transition">
+                    ${text}
+                    ${customContent}
+                  </div>
+                </div>
+              </div>`);
             lucide.createIcons();
             scrollToBottom();
         }
@@ -1298,6 +1389,55 @@
                 }
             }, 1000);
         };
+
+        // ==========================================
+        // Profile Popup
+        // ==========================================
+        async function loadProfileForPopup() {
+            const checkClient = setInterval(async () => {
+                if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+                    clearInterval(checkClient);
+                    try {
+                        const { data: { session } } = await supabaseClient.auth.getSession();
+                        if (session && session.user) {
+                            currentUser = session.user;
+                            const userEmail = session.user.email;
+                            if (userEmail) {
+                                document.getElementById('popup-email').textContent = userEmail;
+                                const domain = userEmail.split('@')[1];
+                                if (domain) document.getElementById('popup-managed').textContent = 'Managed by ' + domain;
+                            }
+                            const { data: profile } = await supabaseClient.from('profiles').select('full_name,nickname').eq('id', session.user.id).single();
+                            currentProfile = profile || currentProfile;
+                            const displayName = profile?.full_name || profile?.nickname || userEmail?.split('@')[0] || 'USER';
+                            document.getElementById('popup-greeting').textContent = 'Hi, ' + displayName.toUpperCase() + '!';
+                            const firstLetter = displayName.charAt(0).toUpperCase();
+                            document.getElementById('popup-avatar-letter').textContent = firstLetter;
+                            document.getElementById('avatar-btn').innerHTML = `<span class="text-[rgb(var(--c-accent))] font-bold text-lg">${firstLetter}</span>`;
+                        }
+                    } catch (err) { console.error(err); }
+                }
+            }, 100);
+        }
+        loadProfileForPopup();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const avatarBtn = document.getElementById('avatar-btn');
+            const accountPopup = document.getElementById('account-popup');
+            const closePopup = document.getElementById('close-popup');
+
+            if (avatarBtn && accountPopup) {
+                avatarBtn.addEventListener('click', () => {
+                    accountPopup.style.display = accountPopup.style.display === 'none' ? 'block' : 'none';
+                });
+                closePopup?.addEventListener('click', () => { accountPopup.style.display = 'none'; });
+                document.addEventListener('click', (e) => {
+                    if (!avatarBtn.contains(e.target) && !accountPopup.contains(e.target)) {
+                        accountPopup.style.display = 'none';
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
