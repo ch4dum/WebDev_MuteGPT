@@ -312,8 +312,15 @@
                                     <input type="date" id="birth-date" required class="w-full bg-black/40 border border-[rgb(var(--c-primary)/0.3)] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[rgb(var(--c-accent))]">
                                 </div>
                                 <div>
-                                    <label class="block text-slate-400 mb-1.5">เวลาเกิด (เวลาตกฟาก) <span class="text-red-400">*</span></label>
-                                    <input type="time" id="birth-time" required class="w-full bg-black/40 border border-[rgb(var(--c-primary)/0.3)] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[rgb(var(--c-accent))]">
+                                    <div class="flex items-center justify-between gap-3 mb-1.5">
+                                        <label class="block text-slate-400">เวลาเกิด (เวลาตกฟาก)</label>
+                                        <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
+                                            <input type="checkbox" id="use-birth-time" class="accent-[rgb(var(--c-accent))]" onchange="toggleBirthTimeField()">
+                                            ใช้เวลาเกิด
+                                        </label>
+                                    </div>
+                                    <input type="time" id="birth-time" disabled class="w-full bg-black/40 border border-[rgb(var(--c-primary)/0.3)] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[rgb(var(--c-accent))] disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <p class="text-[11px] text-slate-500 mt-1">ถ้าไม่ทราบเวลาเกิด ระบบจะไม่คำนวณลัคนา/ภพจากเวลาเกิด</p>
                                 </div>
                             </div>
 
@@ -496,8 +503,18 @@
         
         document.getElementById('current-date').value = localDate;
         document.getElementById('current-time').value = localTime;
-        // ค่าเริ่มต้นเวลาเกิด (ถ้าไม่มี)
-        document.getElementById('birth-time').value = "06:00";
+
+        function toggleBirthTimeField() {
+            const checkbox = document.getElementById('use-birth-time');
+            const birthTimeInput = document.getElementById('birth-time');
+            const enabled = Boolean(checkbox?.checked);
+            if (!birthTimeInput) return;
+            birthTimeInput.disabled = !enabled;
+            birthTimeInput.required = enabled;
+            if (!enabled) birthTimeInput.value = '';
+        }
+
+        toggleBirthTimeField();
 
 
         // ---------------------------------------------------------
@@ -947,10 +964,12 @@
         }
 
         function getFormData() {
+            const useBirthTime = document.getElementById('use-birth-time')?.checked;
             return {
                 name: document.getElementById('user-name').value || 'คุณ',
                 bDate: document.getElementById('birth-date').value,
-                bTime: document.getElementById('birth-time').value,
+                bTime: useBirthTime ? document.getElementById('birth-time').value : '',
+                bTimeUnknown: !useBirthTime,
                 bLoc: document.getElementById('birth-location').value,
                 bLat: document.getElementById('birth-lat').value,
                 bLon: document.getElementById('birth-lon').value,
@@ -968,7 +987,8 @@
                 full_name: currentProfile.full_name || '',
                 nickname: currentProfile.nickname || '',
                 birthdate: userAstroData?.bDate || '',
-                birthtime: userAstroData?.bTime || '06:00',
+                birthtime: userAstroData?.bTime || '',
+                birthtime_unknown: Boolean(userAstroData?.bTimeUnknown || !userAstroData?.bTime),
                 birth_location: userAstroData?.bLoc || 'ไม่ระบุ',
                 birth_lat: userAstroData?.bLat || '',
                 birth_lon: userAstroData?.bLon || '',
@@ -984,7 +1004,7 @@
 
         function buildSessionTitle(data) {
             const displayDate = data?.bDate || 'ไม่ระบุวันเกิด';
-            const displayTime = data?.bTime || 'ไม่ระบุเวลา';
+            const displayTime = data?.bTimeUnknown || !data?.bTime ? 'ไม่ระบุเวลาเกิด' : data.bTime;
             return `ผูกดวง ${displayDate} ${displayTime}`;
         }
 
@@ -1029,7 +1049,14 @@
 
             setInputValue('user-name', profile.full_name || profile.nickname);
             setInputValue('birth-date', profile.birth_date);
-            setInputValue('birth-time', profile.birth_time);
+            if (profile.birth_time) {
+                document.getElementById('use-birth-time').checked = true;
+                toggleBirthTimeField();
+                setInputValue('birth-time', profile.birth_time);
+            } else {
+                document.getElementById('use-birth-time').checked = false;
+                toggleBirthTimeField();
+            }
 
             setInputValue('birth-location', profile.birth_location || profile.birth_place || profile.location);
             setInputValue('birth-lat', profile.birth_lat || profile.birth_latitude || profile.latitude);
@@ -1057,7 +1084,7 @@
                     user_id: user.id,
                     title: buildSessionTitle(data),
                     birth_date: data.bDate,
-                    birth_time: data.bTime,
+                    birth_time: data.bTime || null,
                     birth_location: data.bLoc,
                     birth_lat: data.bLat,
                     birth_lon: data.bLon,
@@ -1200,7 +1227,8 @@
             userAstroData = session.chart_data || {
                 name: 'คุณ',
                 bDate: session.birth_date,
-                bTime: session.birth_time,
+                bTime: session.birth_time || '',
+                bTimeUnknown: !session.birth_time,
                 bLoc: session.birth_location,
                 bLat: session.birth_lat,
                 bLon: session.birth_lon,
@@ -1318,7 +1346,8 @@
             document.getElementById('hora-history-panel')?.remove();
 
             // แสดงข้อความฝั่งผู้ใช้ (สรุปข้อมูลที่ส่งไป)
-            const summaryMsg = `ขอผูกดวงครับ/ค่ะ\nเกิดวันที่ ${userAstroData.bDate} เวลา ${userAstroData.bTime} น. ที่ ${userAstroData.bLoc}`;
+            const birthTimeText = userAstroData.bTimeUnknown ? 'ไม่ระบุเวลาเกิด' : `เวลา ${userAstroData.bTime} น.`;
+            const summaryMsg = `ขอผูกดวงครับ/ค่ะ\nเกิดวันที่ ${userAstroData.bDate} ${birthTimeText} ที่ ${userAstroData.bLoc}`;
             appendUserMessage(formatUserText(summaryMsg));
 
             inputArea.classList.remove('hidden');

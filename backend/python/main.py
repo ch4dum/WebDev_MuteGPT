@@ -32,7 +32,7 @@ class ChatRequest(BaseModel):
     full_name: Optional[str] = None
     nickname: Optional[str] = None
     birthdate: str
-    birthtime: str = "12:00"
+    birthtime: str = ""
     fan_birthdate: Optional[str] = None
     status: str = "SINGLE"
     question: str
@@ -64,7 +64,8 @@ class ThaiAstrologyRequest(BaseModel):
     full_name: Optional[str] = None
     nickname: Optional[str] = None
     birthdate: str
-    birthtime: str = "06:00"
+    birthtime: str = ""
+    birthtime_unknown: bool = False
     birth_location: str = "กรุงเทพมหานคร"
     birth_lat: Optional[str] = None
     birth_lon: Optional[str] = None
@@ -292,6 +293,9 @@ def normalize_chart_time(time_str: str):
 
 def get_natal_chart_context(req: ThaiAstrologyRequest):
     try:
+        if req.birthtime_unknown or not req.birthtime:
+            return "ผู้ใช้ไม่ได้ระบุเวลาเกิด จึงไม่คำนวณลัคนา ภพ หรือดาวเจ้าเรือนจากเวลาเกิด ให้ตีความจากวันเกิด สถานที่เกิด และดาวจรเท่าที่มี พร้อมระบุข้อจำกัดอย่างสั้น ๆ"
+
         chart_data = build_sidereal_chart_data(req.birthdate, req.birthtime, req.birth_lat, req.birth_lon)
         if chart_data is None:
             return "ยังคำนวณพื้นดวงจริงไม่ได้ เพราะวัน/เวลา/พิกัดเกิดไม่ครบ ให้ตีความจากข้อมูลเกิดที่มีและระบุข้อจำกัดอย่างสั้น ๆ"
@@ -754,13 +758,14 @@ async def get_horoscope(req: ChatRequest):
         current_planets_data = get_current_transits()
         
         prompt_config = PROMPT_LIBRARY.get(req.category, PROMPT_LIBRARY["GENERAL"])
+        birthtime_text = req.birthtime or "ไม่ระบุเวลาเกิด"
         
         system_instruction = prompt_config["system"].format(
             name=display_name,
             name_context=name_context,
             zodiac=zodiac,
             birthdate=req.birthdate,
-            birthtime=req.birthtime,
+            birthtime=birthtime_text,
             partner_context=partner_context,
             status=req.status,
             current_date=current_date_str,
@@ -922,11 +927,12 @@ async def get_thai_astrology(req: ThaiAstrologyRequest):
         )
 
         prompt_key = "THAI_ASTROLOGY_OVERVIEW" if req.mode == "THAI_ASTROLOGY_OVERVIEW" else "THAI_ASTROLOGY"
+        birthtime_text = "ไม่ระบุเวลาเกิด" if req.birthtime_unknown or not req.birthtime else req.birthtime
         system_instruction = PROMPT_LIBRARY[prompt_key]["system"].format(
             name=display_name,
             name_context=name_context,
             birthdate=req.birthdate,
-            birthtime=req.birthtime,
+            birthtime=birthtime_text,
             birth_location=req.birth_location,
             birth_lat=req.birth_lat or "ไม่ระบุ",
             birth_lon=req.birth_lon or "ไม่ระบุ",

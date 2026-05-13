@@ -8,7 +8,7 @@ create table if not exists public.hora_sessions (
   user_id uuid not null references auth.users(id) on delete cascade,
   title text not null,
   birth_date date not null,
-  birth_time time not null,
+  birth_time time,
   birth_location text not null,
   birth_lat text,
   birth_lon text,
