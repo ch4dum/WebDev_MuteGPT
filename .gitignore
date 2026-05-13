@@ -7,6 +7,10 @@ node_modules/
 # Environment variables
 .env
 
+# Local notes / handoff documents
+*.docx
+note.md
+
 # Python generated files
 __pycache__/
 *.py[cod]
