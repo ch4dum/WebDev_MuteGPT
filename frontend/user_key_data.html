@@ -203,14 +203,18 @@
             </div>
           </div>
 
-          <!-- เวลาเกิด -->
+          <!-- เวลาเกิด (optional with checkbox toggle) -->
           <div class="profile-field">
-            <label for="input-birthtime">เวลาเกิด (เวลาตกฟาก)</label>
-            <div class="profile-input-wrap">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; user-select: none;">
+              <input type="checkbox" id="toggle-birthtime"
+                style="width: 1.1rem; height: 1.1rem; accent-color: #a855f7; cursor: pointer;" />
+              <span>ต้องการระบุเวลาเกิด (เวลาตกฟาก)</span>
+            </label>
+            <div class="profile-input-wrap" id="birthtime-wrap" style="opacity: 0.4; pointer-events: none;">
               <div class="field-icon"><i data-lucide="clock"></i></div>
-              <input id="input-birthtime" type="time" class="profile-input" required />
+              <input id="input-birthtime" type="time" class="profile-input" disabled />
             </div>
-            <p class="profile-hint">* หากไม่ทราบแน่ชัด ให้ระบุ 06:00 น.</p>
+            <p class="profile-hint" id="birthtime-hint">* ติ๊กเลือกหากทราบเวลาเกิด — ข้อมูลนี้ไม่บังคับ</p>
           </div>
 
         </div>
@@ -248,6 +252,8 @@
       navLogo.addEventListener('click', (e) => {
         let hasEmpty = false;
         profileInputs.forEach(input => {
+          // ข้ามการเช็คเวลาเกิดถ้า checkbox ไม่ได้ติ๊ก
+          if (input.id === 'input-birthtime' && !document.getElementById('toggle-birthtime').checked) return;
           if (input.value.trim() === '') hasEmpty = true;
         });
         const genderSelected = document.querySelector('input[name="gender"]:checked');
@@ -312,6 +318,29 @@
       });
     }
 
+    // --- Toggle เวลาเกิด ---
+    const toggleBirthtime = document.getElementById('toggle-birthtime');
+    const birthtimeWrap = document.getElementById('birthtime-wrap');
+    const birthtimeInput = document.getElementById('input-birthtime');
+    const birthtimeHint = document.getElementById('birthtime-hint');
+
+    if (toggleBirthtime) {
+      toggleBirthtime.addEventListener('change', () => {
+        const isChecked = toggleBirthtime.checked;
+        birthtimeWrap.style.opacity = isChecked ? '1' : '0.4';
+        birthtimeWrap.style.pointerEvents = isChecked ? 'auto' : 'none';
+        birthtimeInput.disabled = !isChecked;
+        if (!isChecked) {
+          birthtimeInput.value = '';
+          birthtimeInput.classList.remove('input-error');
+          birthtimeHint.textContent = '* ติ๊กเลือกหากทราบเวลาเกิด — ข้อมูลนี้ไม่บังคับ';
+        } else {
+          birthtimeHint.textContent = '* หากไม่ทราบแน่ชัด ให้ระบุ 06:00 น.';
+          birthtimeInput.focus();
+        }
+      });
+    }
+
     // --- Load Profile Data ---
     async function loadProfile() {
       const checkClient = setInterval(async () => {
@@ -345,7 +374,15 @@
                 if (profile.nickname) document.getElementById('input-nickname').value = profile.nickname;
                 if (profile.phone_last4) document.getElementById('input-phone-last4').value = profile.phone_last4;
                 if (profile.birth_date) document.getElementById('input-birthdate').value = isoDateToDisplay(profile.birth_date);
-                if (profile.birth_time) document.getElementById('input-birthtime').value = profile.birth_time;
+                if (profile.birth_time) {
+                  document.getElementById('input-birthtime').value = profile.birth_time;
+                  // เปิด checkbox และ enable ช่องเวลาเกิดอัตโนมัติ
+                  const toggle = document.getElementById('toggle-birthtime');
+                  if (toggle) {
+                    toggle.checked = true;
+                    toggle.dispatchEvent(new Event('change'));
+                  }
+                }
                 if (profile.gender) {
                   const genderRadio = document.querySelector(`input[name="gender"][value="${profile.gender}"]`);
                   if (genderRadio) genderRadio.checked = true;
@@ -465,7 +502,13 @@
       }
 
       let hasEmpty = false;
+      const isBirthtimeEnabled = document.getElementById('toggle-birthtime').checked;
       profileInputs.forEach(input => {
+        // ข้ามการเช็คเวลาเกิดถ้า checkbox ไม่ได้ติ๊ก
+        if (input.id === 'input-birthtime' && !isBirthtimeEnabled) {
+          input.classList.remove('input-error');
+          return;
+        }
         if (input.value.trim() === '') {
           input.classList.remove('input-error');
           void input.offsetWidth;
@@ -525,7 +568,7 @@
           nickname: document.getElementById('input-nickname').value,
           phone_last4: document.getElementById('input-phone-last4').value,
           birth_date: birthDateIso,
-          birth_time: document.getElementById('input-birthtime').value,
+          birth_time: document.getElementById('toggle-birthtime').checked ? document.getElementById('input-birthtime').value : null,
           gender: genderSelected.value,
           updated_at: new Date()
         };

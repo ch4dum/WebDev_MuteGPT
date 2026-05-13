@@ -210,7 +210,7 @@ async function checkUserProfile(user) {
         }
 
         const isProfileComplete = profile && profile.full_name && profile.nickname && profile.phone_last4 &&
-            profile.birth_date && profile.birth_time && profile.gender;
+            profile.birth_date && profile.gender;
         const currentPath = window.location.pathname;
         const isOnProfilePage = currentPath.includes('user_key_data.html');
         const isLoadingPage = currentPath.includes('separator.html') || currentPath.includes('index.html') || currentPath.endsWith('/');
