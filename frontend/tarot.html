@@ -141,7 +141,8 @@
         .card-front img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            background: #020617;
         }
         
         /* ---------------------------------------------------- */
@@ -170,14 +171,14 @@
             }
         }
         .deck-card-circle:hover {
-            transform: rotate(var(--target-angle)) translateY(-150px) scale(1.2);
-            box-shadow: 0 0 15px rgba(168, 85, 247, 0.8);
+            transform: rotate(var(--target-angle)) translateY(-165px) scale(1.28);
+            box-shadow: 0 0 22px rgba(168, 85, 247, 0.95);
             border-color: #fbbf24;
-            z-index: 50 !important;
+            z-index: 2147483647 !important;
         }
         @media (min-width: 768px) {
             .deck-card-circle:hover {
-                transform: rotate(var(--target-angle)) translateY(-270px) scale(1.25);
+                transform: rotate(var(--target-angle)) translateY(-285px) scale(1.28);
             }
         }
 
@@ -207,10 +208,10 @@
             z-index: 10;
         }
         .deck-card-fan:hover {
-            transform: rotate(var(--target-angle)) translateY(-15px) scale(1.1);
-            box-shadow: 0 0 15px rgba(168, 85, 247, 0.8);
+            transform: rotate(var(--target-angle)) translateY(-24px) scale(1.16);
+            box-shadow: 0 0 22px rgba(168, 85, 247, 0.95);
             border-color: #fbbf24;
-            z-index: 100 !important;
+            z-index: 2147483647 !important;
         }
         @media (min-width: 768px) {
             .deck-card-fan {
@@ -221,7 +222,7 @@
                 transform-origin: center 300px;
             }
             .deck-card-fan:hover {
-                transform: rotate(var(--target-angle)) translateY(-25px) scale(1.1);
+                transform: rotate(var(--target-angle)) translateY(-36px) scale(1.16);
             }
         }
     </style>
@@ -589,7 +590,61 @@
         }
 
         function handleBackNavigation() {
+            if (chatState !== 'AWAITING_CATEGORY') {
+                resetToCategorySelection();
+                return;
+            }
             window.location.href = 'main.html';
+        }
+
+        function resetToCategorySelection() {
+            chatState = 'AWAITING_CATEGORY';
+            currentTarotSessionId = null;
+            selectedCardsData = [];
+            availableDeck = [];
+            userData = {
+                categoryKey: '',
+                categoryName: '',
+                categoryDesc: '',
+                subCategoryKey: '',
+                subCategoryName: '',
+                question: '',
+                spreadType: 'fan1',
+            };
+
+            Array.from(chatMessages.children).forEach(child => {
+                if (child.id !== 'category-selection' && child.dataset.persistent !== 'true') {
+                    child.remove();
+                }
+            });
+
+            const categorySelection = document.getElementById('category-selection');
+            if (categorySelection) categorySelection.style.display = '';
+            userInput.value = '';
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+            userInput.placeholder = 'กรุณาเลือกหมวดหมู่การทำนายด้านบนก่อนนะคะ...';
+            showTyping(false);
+            scrollToBottom();
+        }
+
+        function buildThreeSituationOptions() {
+            return `
+                <div class="mt-3 grid grid-cols-1 gap-2">
+                    <button onclick="window.selectSubCategory(this, 'life_path', 'ดูเส้นทางชีวิต')" class="w-full text-left px-3.5 py-2.5 rounded-lg border border-purple-500/25 bg-purple-900/15 hover:bg-purple-800/30 transition-colors shadow-sm group">
+                        <span class="block font-semibold text-amber-200 group-hover:text-amber-100 text-[15px] leading-tight">🌌 ดูเส้นทางชีวิต</span>
+                        <span class="block text-xs text-purple-300/70 mt-1 leading-tight">อดีต, ปัจจุบัน และอนาคต</span>
+                    </button>
+                    <button onclick="window.selectSubCategory(this, 'problem_solving', 'การแก้ไขปัญหา')" class="w-full text-left px-3.5 py-2.5 rounded-lg border border-purple-500/25 bg-purple-900/15 hover:bg-purple-800/30 transition-colors shadow-sm group">
+                        <span class="block font-semibold text-amber-200 group-hover:text-amber-100 text-[15px] leading-tight">🧩 การแก้ไขปัญหา</span>
+                        <span class="block text-xs text-purple-300/70 mt-1 leading-tight">สาเหตุ, วิธีแก้ และผลลัพธ์</span>
+                    </button>
+                    <button onclick="window.selectSubCategory(this, 'decision_making', 'การตัดสินใจ')" class="w-full text-left px-3.5 py-2.5 rounded-lg border border-purple-500/25 bg-purple-900/15 hover:bg-purple-800/30 transition-colors shadow-sm group">
+                        <span class="block font-semibold text-amber-200 group-hover:text-amber-100 text-[15px] leading-tight">⚖️ การตัดสินใจ</span>
+                        <span class="block text-xs text-purple-300/70 mt-1 leading-tight">ทางเลือก A, ทางเลือก B และคำแนะนำ</span>
+                    </button>
+                </div>
+            `;
         }
 
         function appendUserMessage(text) {
@@ -608,8 +663,9 @@
             scrollToBottom();
         }
 
-        function appendAIMessage(text, customContent = '') {
-            const htmlContent = window.marked ? marked.parse(String(text || '')) : text;
+        function appendAIMessage(text, customContent = '', options = {}) {
+            const shouldParseMarkdown = options.parseMarkdown !== false;
+            const htmlContent = shouldParseMarkdown && window.marked ? marked.parse(String(text || '')) : String(text || '');
             chatMessages.insertAdjacentHTML('beforeend', `
               <div class="flex gap-3 msg-animate w-full">
                 <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[rgb(var(--c-primary))] to-[rgb(var(--c-dark))] border border-[rgb(var(--c-accent))] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgb(var(--c-primary)/0.3)] mt-1 theme-transition">
@@ -668,10 +724,21 @@
             appendAIMessage('ระบบประวัติไพ่ยิปซียังไม่พร้อมใช้งาน เพราะยังไม่ได้สร้างตาราง Tarot ใน Supabase ตอนนี้ยังทำนายได้ตามปกติ แต่ประวัติจะยังไม่ถูกบันทึกจนกว่าจะรันไฟล์ `supabase/tarot_schema.sql` ใน Supabase SQL Editor');
         }
 
-        function buildTarotSessionTitle(question) {
-            const compact = String(question || 'ไม่มีคำถาม').replace(/\s+/g, ' ').trim();
-            const label = userData.subCategoryName || userData.categoryName || 'ไพ่ยิปซี';
-            return `${label}: ${compact.slice(0, 36)}${compact.length > 36 ? '...' : ''}`;
+        function truncateText(value, maxLength) {
+            const compact = String(value || 'ไม่มีคำถาม').replace(/\s+/g, ' ').trim();
+            return `${compact.slice(0, maxLength)}${compact.length > maxLength ? '...' : ''}`;
+        }
+
+        function buildTarotSessionTitle(question, cards = []) {
+            const questionTitle = truncateText(question || 'ไม่มีคำถาม', 42);
+            const cardNames = (cards || [])
+                .map(card => card?.name)
+                .filter(Boolean);
+
+            if (cardNames.length === 0) return questionTitle;
+
+            const cardsTitle = truncateText(cardNames.join(', '), 58);
+            return `${questionTitle} | ไพ่: ${cardsTitle}`;
         }
 
         function getCardsPayload(cards) {
@@ -753,6 +820,23 @@
             }
         }
 
+        async function updateTarotSessionTitle(cards) {
+            if (!currentTarotSessionId || !currentUser?.id) return;
+
+            const { error } = await supabaseClient
+                .from('tarot_sessions')
+                .update({
+                    title: buildTarotSessionTitle(userData.question || 'ไม่มี', cards),
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', currentTarotSessionId);
+
+            if (error) {
+                showTarotSetupWarning(error);
+                console.error('Unable to update tarot session title:', error);
+            }
+        }
+
         async function touchTarotSession() {
             if (!currentTarotSessionId) return;
             const { error } = await supabaseClient
@@ -804,8 +888,8 @@
                 cards.forEach((card, idx) => {
                     cardsSummaryHTML += `
                         <div class="flex gap-4 items-start">
-                            <div class="w-14 h-20 md:w-20 md:h-32 shrink-0 border border-purple-500/50 rounded overflow-hidden shadow-md">
-                                <img src="${card.imgUrl}" class="w-full h-full object-cover" alt="${escapeHtml(card.name)}">
+                            <div class="w-14 h-20 md:w-20 md:h-32 shrink-0 border border-purple-500/50 rounded overflow-hidden shadow-md bg-slate-950">
+                                <img src="${card.imgUrl}" class="w-full h-full object-contain" alt="${escapeHtml(card.name)}">
                             </div>
                             <div>
                                 <span class="text-[10px] md:text-xs font-bold px-2 py-0.5 rounded ${badgeColors[idx]} border border-purple-500/30">${labels[idx]}</span>
@@ -817,8 +901,8 @@
             } else if (cards[0]) {
                 cardsSummaryHTML += `
                     <div class="flex gap-4 items-start">
-                        <div class="w-16 h-24 md:w-20 md:h-32 shrink-0 border border-purple-500/50 rounded overflow-hidden shadow-md">
-                            <img src="${cards[0].imgUrl}" class="w-full h-full object-cover" alt="${escapeHtml(cards[0].name)}">
+                        <div class="w-16 h-24 md:w-20 md:h-32 shrink-0 border border-purple-500/50 rounded overflow-hidden shadow-md bg-slate-950">
+                            <img src="${cards[0].imgUrl}" class="w-full h-full object-contain" alt="${escapeHtml(cards[0].name)}">
                         </div>
                         <div>
                             <span class="text-[10px] md:text-xs font-bold px-2 py-0.5 rounded bg-purple-900/50 text-purple-200 border border-purple-500/30">ไพ่ที่เลือก</span>
@@ -831,8 +915,9 @@
         }
 
         function appendTarotReadingMessage(cards, prediction) {
-            const content = `<b>หน้าไพ่ที่คุณเปิดได้:</b>${buildCardsSummaryHTML(cards)}<b>คำทำนายจากแม่หมอ:</b><br>${window.marked ? marked.parse(String(prediction || '')) : prediction}`;
-            appendAIMessage(content);
+            const predictionHtml = window.marked ? marked.parse(String(prediction || '')) : escapeHtml(prediction || '');
+            const content = `<b>หน้าไพ่ที่คุณเปิดได้:</b>${buildCardsSummaryHTML(cards)}<b>คำทำนายจากแม่หมอ:</b><br>${predictionHtml}`;
+            appendAIMessage('', content, { parseMarkdown: false });
         }
 
         function appendFollowUpOptions() {
@@ -848,7 +933,7 @@
                         </button>
                     </div>
                 </div>`;
-            appendAIMessage(followUpResponse);
+            appendAIMessage('', followUpResponse, { parseMarkdown: false });
         }
 
         function appendTarotHistoryMessage(sessions) {
@@ -1045,24 +1130,7 @@
                 
                 if (key === 'three_situations') {
                     chatState = 'AWAITING_SUB_CATEGORY';
-                    
-                    let subCatUI = `
-                        <div class="mt-4 flex flex-col gap-3">
-                            <button onclick="window.selectSubCategory(this, 'life_path', 'ดูเส้นทางชีวิต')" class="w-full text-left p-3 md:p-4 rounded-xl border border-purple-500/30 bg-purple-900/20 hover:bg-purple-800/40 transition-colors shadow-md group">
-                                <div class="font-bold text-amber-200 group-hover:text-amber-100 mb-1 text-sm md:text-base">🌌 ดูเส้นทางชีวิต</div>
-                                <div class="text-xs text-purple-300/70">วิเคราะห์อดีต, ปัจจุบัน, และอนาคตของคุณ</div>
-                            </button>
-                            <button onclick="window.selectSubCategory(this, 'problem_solving', 'การแก้ไขปัญหา')" class="w-full text-left p-3 md:p-4 rounded-xl border border-purple-500/30 bg-purple-900/20 hover:bg-purple-800/40 transition-colors shadow-md group">
-                                <div class="font-bold text-amber-200 group-hover:text-amber-100 mb-1 text-sm md:text-base">🧩 การแก้ไขปัญหา</div>
-                                <div class="text-xs text-purple-300/70">หาสาเหตุ, วิธีแก้ไข, และผลลัพธ์ที่จะตามมา</div>
-                            </button>
-                            <button onclick="window.selectSubCategory(this, 'decision_making', 'การตัดสินใจ')" class="w-full text-left p-3 md:p-4 rounded-xl border border-purple-500/30 bg-purple-900/20 hover:bg-purple-800/40 transition-colors shadow-md group">
-                                <div class="font-bold text-amber-200 group-hover:text-amber-100 mb-1 text-sm md:text-base">⚖️ การตัดสินใจ</div>
-                                <div class="text-xs text-purple-300/70">เปรียบเทียบทางเลือก A, ทางเลือก B, และคำแนะนำ</div>
-                            </button>
-                        </div>
-                    `;
-                    appendAIMessage(`สำหรับการอ่านไพ่ 3 สถานการณ์ คุณต้องการให้แม่หมอเน้นดูรูปแบบไหนเป็นพิเศษคะ? ✨${subCatUI}`);
+                    appendAIMessage('', `<div class="text-sm leading-snug">สำหรับการอ่านไพ่ 3 สถานการณ์ อยากเน้นแบบไหนเป็นพิเศษคะ?</div>${buildThreeSituationOptions()}`, { parseMarkdown: false });
                 } else {
                     chatState = 'AWAITING_QUESTION';
                     userInput.disabled = false;
@@ -1280,6 +1348,17 @@
         // ==========================================
         // ฟังก์ชันสำหรับวงล้อ (Wheel Spread - 78 ใบ)
         // ==========================================
+        window.bringDeckCardToFront = function(element) {
+            if (!element) return;
+            element.dataset.zIndex = element.dataset.zIndex || element.style.zIndex || '10';
+            element.style.setProperty('z-index', '2147483647', 'important');
+        };
+
+        window.restoreDeckCardLayer = function(element) {
+            if (!element) return;
+            element.style.zIndex = element.dataset.zIndex || '10';
+        };
+
         window.renderWheelSpread = function(animateFromCenter = false) {
             const container = document.getElementById('deck-container');
             if (!container) return;
@@ -1303,6 +1382,9 @@
                     <div class="deck-card-circle cursor-pointer rounded border border-purple-400/50 card-back shadow-md" 
                          style="--target-angle: ${angle}deg; z-index: ${idx}; ${inlineTransform}" 
                          data-index="${originalIndex}" 
+                         data-z-index="${idx}"
+                         onmouseenter="window.bringDeckCardToFront(this)"
+                         onmouseleave="window.restoreDeckCardLayer(this)"
                          onclick="window.selectFromDeck(this)">
                     </div>
                 `;
@@ -1416,6 +1498,9 @@
                     <div class="deck-card-fan cursor-pointer rounded border border-purple-400/50 card-back shadow-md" 
                          style="--target-angle: ${angle}deg; z-index: ${idx}; ${inlineTransform}" 
                          data-index="${originalIndex}" 
+                         data-z-index="${idx}"
+                         onmouseenter="window.bringDeckCardToFront(this)"
+                         onmouseleave="window.restoreDeckCardLayer(this)"
                          onclick="window.selectFromDeck(this)">
                     </div>
                 `;
@@ -1615,7 +1700,7 @@
                 appendTarotReadingMessage(cards, reply);
                 await saveTarotMessage('assistant', `<b>หน้าไพ่ที่คุณเปิดได้:</b>${buildCardsSummaryHTML(cards)}<b>คำทำนายจากแม่หมอ:</b><br>${reply}`);
                 await saveTarotReading(cards, reply);
-                await touchTarotSession();
+                await updateTarotSessionTitle(cards);
 
                 chatState = 'READING_COMPLETE';
                 userInput.disabled = true;
@@ -1697,24 +1782,7 @@
                 // ตรวจสอบว่าถ้าอยู่ในหมวด 3 สถานการณ์ ให้ถามรูปแบบย่อยอีกครั้ง
                 if (userData.categoryKey === 'three_situations') {
                     chatState = 'AWAITING_SUB_CATEGORY';
-                    
-                    let subCatUI = `
-                        <div class="mt-4 flex flex-col gap-3">
-                            <button onclick="window.selectSubCategory(this, 'life_path', 'ดูเส้นทางชีวิต')" class="w-full text-left p-3 md:p-4 rounded-xl border border-purple-500/30 bg-purple-900/20 hover:bg-purple-800/40 transition-colors shadow-md group">
-                                <div class="font-bold text-amber-200 group-hover:text-amber-100 mb-1 text-sm md:text-base">🌌 ดูเส้นทางชีวิต</div>
-                                <div class="text-xs text-purple-300/70">วิเคราะห์อดีต, ปัจจุบัน, และอนาคตของคุณ</div>
-                            </button>
-                            <button onclick="window.selectSubCategory(this, 'problem_solving', 'การแก้ไขปัญหา')" class="w-full text-left p-3 md:p-4 rounded-xl border border-purple-500/30 bg-purple-900/20 hover:bg-purple-800/40 transition-colors shadow-md group">
-                                <div class="font-bold text-amber-200 group-hover:text-amber-100 mb-1 text-sm md:text-base">🧩 การแก้ไขปัญหา</div>
-                                <div class="text-xs text-purple-300/70">หาสาเหตุ, วิธีแก้ไข, และผลลัพธ์ที่จะตามมา</div>
-                            </button>
-                            <button onclick="window.selectSubCategory(this, 'decision_making', 'การตัดสินใจ')" class="w-full text-left p-3 md:p-4 rounded-xl border border-purple-500/30 bg-purple-900/20 hover:bg-purple-800/40 transition-colors shadow-md group">
-                                <div class="font-bold text-amber-200 group-hover:text-amber-100 mb-1 text-sm md:text-base">⚖️ การตัดสินใจ</div>
-                                <div class="text-xs text-purple-300/70">เปรียบเทียบทางเลือก A, ทางเลือก B, และคำแนะนำ</div>
-                            </button>
-                        </div>
-                    `;
-                    appendAIMessage(`สำหรับการอ่านไพ่ 3 สถานการณ์ในรอบนี้ คุณต้องการให้แม่หมอเน้นดูรูปแบบไหนเป็นพิเศษคะ? ✨${subCatUI}`);
+                    appendAIMessage('', `<div class="text-sm leading-snug">สำหรับการอ่านไพ่ 3 สถานการณ์ในรอบนี้ อยากเน้นแบบไหนเป็นพิเศษคะ?</div>${buildThreeSituationOptions()}`, { parseMarkdown: false });
                 } else {
                     // เปลี่ยน State ให้กลับไปรอคำถามใหม่ (สำหรับโหมดอื่นๆ)
                     chatState = 'AWAITING_QUESTION';
