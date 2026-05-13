@@ -921,8 +921,8 @@
         }
 
         function appendFollowUpOptions() {
-            const followUpResponse = `
-                <div class="p-4 bg-purple-900/20 border border-purple-500/30 rounded-xl text-center">
+            const followUpButtons = `
+                <div class="p-4 bg-purple-900/20 border border-purple-500/30 rounded-xl text-center mt-3">
                     <p class="text-purple-200 mb-4 text-sm md:text-base">ต้องการทำสิ่งใดต่อไปคะ?</p>
                     <div class="flex flex-col md:flex-row justify-center gap-3">
                         <button onclick="window.askFollowUpQuestion(this)" class="px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white rounded-full font-bold shadow-md transition-all hover:scale-105 text-sm md:text-base flex-1">
@@ -933,7 +933,7 @@
                         </button>
                     </div>
                 </div>`;
-            appendAIMessage('', followUpResponse, { parseMarkdown: false });
+            appendAIMessage('', followUpButtons, { parseMarkdown: false });
         }
 
         function appendTarotHistoryMessage(sessions) {
