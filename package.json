@@ -1,0 +1,16 @@
+{
+  "name": "mutegpt-vercel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vercel deployment wrapper for MuteGPT frontend and API proxy.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev:vercel": "vercel dev"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  }
+}

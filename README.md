@@ -58,6 +58,43 @@ The web app runs at [http://localhost:3000](http://localhost:3000).
 
 Open the app through the Node gateway. Do not open the HTML files directly, because the frontend depends on `/api/config` and `/api/v1/horoscope`.
 
+## Deploying to Vercel
+
+This repository includes a Vercel wrapper for deploying the static frontend and API proxy. The Python FastAPI service should be deployed separately, for example on Render, Railway, Fly.io, or a VPS.
+
+### 1. Deploy the Python Backend Separately
+
+Deploy `backend/python/main.py` as a FastAPI service and set the Python service environment variables there:
+
+```env
+GEMINI_API_KEY=your-gemini-api-key
+```
+
+After deployment, keep the public API URL, for example:
+
+```text
+https://mutegpt-python.onrender.com
+```
+
+### 2. Deploy the Frontend and Proxy to Vercel
+
+Import this GitHub repository in Vercel and set the project root to the repository root. Vercel uses:
+
+- `vercel.json` for routing
+- `api/index.js` for `/api/config` and `/api/v1/*` proxy routes
+- `frontend/` for static HTML, CSS, JS, and assets
+
+Set these Vercel environment variables:
+
+```env
+GOOGLE_CLIENT_ID=your-google-client-id
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key
+PYTHON_API_URL=https://mutegpt-python.onrender.com
+```
+
+Do not set `PYTHON_API_URL` to `localhost` in production. It must point to the deployed Python backend.
+
 ## Runtime Flow
 
 - Node serves files from `frontend/`

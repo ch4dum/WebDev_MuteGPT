@@ -10,6 +10,7 @@ node_modules/
 # Local notes / handoff documents
 *.docx
 note.md
+.codex_backups/
 
 # Python generated files
 __pycache__/

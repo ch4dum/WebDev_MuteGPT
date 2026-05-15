@@ -1,0 +1,64 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/assets/(.*)",
+      "destination": "/frontend/assets/$1"
+    },
+    {
+      "source": "/css/(.*)",
+      "destination": "/frontend/css/$1"
+    },
+    {
+      "source": "/js/(.*)",
+      "destination": "/frontend/js/$1"
+    },
+    {
+      "source": "/",
+      "destination": "/frontend/index.html"
+    },
+    {
+      "source": "/index.html",
+      "destination": "/frontend/index.html"
+    },
+    {
+      "source": "/main.html",
+      "destination": "/frontend/main.html"
+    },
+    {
+      "source": "/separator.html",
+      "destination": "/frontend/separator.html"
+    },
+    {
+      "source": "/user_key_data.html",
+      "destination": "/frontend/user_key_data.html"
+    },
+    {
+      "source": "/love.html",
+      "destination": "/frontend/love.html"
+    },
+    {
+      "source": "/number.html",
+      "destination": "/frontend/number.html"
+    },
+    {
+      "source": "/color.html",
+      "destination": "/frontend/color.html"
+    },
+    {
+      "source": "/hora.html",
+      "destination": "/frontend/hora.html"
+    },
+    {
+      "source": "/tarot.html",
+      "destination": "/frontend/tarot.html"
+    }
+  ]
+}
