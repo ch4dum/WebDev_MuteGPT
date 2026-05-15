@@ -161,6 +161,8 @@
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s, box-shadow 0.2s;
             transform-origin: center center;
             z-index: 10;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
         @media (min-width: 768px) {
             .deck-card-circle {
@@ -171,13 +173,15 @@
                 transform: rotate(var(--target-angle)) translateY(-240px);
             }
         }
-        .deck-card-circle:hover {
-            transform: rotate(var(--target-angle)) translateY(-165px) scale(1.28);
-            box-shadow: 0 0 22px rgba(168, 85, 247, 0.95);
-            border-color: #fbbf24;
-            z-index: 2147483647 !important;
+        @media (hover: hover) and (pointer: fine) {
+            .deck-card-circle:hover {
+                transform: rotate(var(--target-angle)) translateY(-165px) scale(1.28);
+                box-shadow: 0 0 22px rgba(168, 85, 247, 0.95);
+                border-color: #fbbf24;
+                z-index: 250 !important;
+            }
         }
-        @media (min-width: 768px) {
+        @media (min-width: 768px) and (hover: hover) and (pointer: fine) {
             .deck-card-circle:hover {
                 transform: rotate(var(--target-angle)) translateY(-285px) scale(1.28);
             }
@@ -207,12 +211,16 @@
             transform: rotate(var(--target-angle));
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
             z-index: 10;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
-        .deck-card-fan:hover {
-            transform: rotate(var(--target-angle)) translateY(-24px) scale(1.16);
-            box-shadow: 0 0 22px rgba(168, 85, 247, 0.95);
-            border-color: #fbbf24;
-            z-index: 2147483647 !important;
+        @media (hover: hover) and (pointer: fine) {
+            .deck-card-fan:hover {
+                transform: rotate(var(--target-angle)) translateY(-24px) scale(1.16);
+                box-shadow: 0 0 22px rgba(168, 85, 247, 0.95);
+                border-color: #fbbf24;
+                z-index: 250 !important;
+            }
         }
         @media (min-width: 768px) {
             .deck-card-fan {
@@ -222,9 +230,21 @@
                 margin-left: -27.5px;
                 transform-origin: center 300px;
             }
+        }
+        @media (min-width: 768px) and (hover: hover) and (pointer: fine) {
             .deck-card-fan:hover {
                 transform: rotate(var(--target-angle)) translateY(-36px) scale(1.16);
             }
+        }
+
+        .deck-card-circle.is-picked,
+        .deck-card-fan.is-picked {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .tarot-center-controls {
+            z-index: 300 !important;
         }
     </style>
 </head>
@@ -473,6 +493,7 @@
         };
         let selectedCardsData = [];
         let availableDeck = [];
+        let isSelectingCard = false;
         const tarotHistoryCache = new Map();
         let currentTarotSessionId = null;
         let hasShownTarotSetupWarning = false;
@@ -604,6 +625,7 @@
             currentTarotSessionId = null;
             selectedCardsData = [];
             availableDeck = [];
+            isSelectingCard = false;
             userData = {
                 categoryKey: '',
                 categoryName: '',
@@ -1250,6 +1272,7 @@
                 showTyping(false);
                 chatState = 'AWAITING_CARD_SELECTION';
                 selectedCardsData = [];
+                isSelectingCard = false;
 
                 let customUI = '';
 
@@ -1394,7 +1417,7 @@
 
             // สร้างปุ่มควบคุมตรงกลางวงล้อ
             const centerControls = `
-                <div class="absolute z-20 text-center flex flex-col items-center justify-center w-[160px] md:w-[200px] pointer-events-auto bg-[#0a0512]/80 backdrop-blur-md p-4 rounded-full border border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.2)] aspect-square">
+                <div class="tarot-center-controls absolute z-20 text-center flex flex-col items-center justify-center w-[160px] md:w-[200px] pointer-events-auto bg-[#0a0512]/80 backdrop-blur-md p-4 rounded-full border border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.2)] aspect-square">
                     <p class="text-[11px] md:text-[13px] text-slate-200 mb-2 leading-relaxed" id="selection-status-inner">คลิกเลือกไพ่ ${isThree ? '3' : '1'} ใบ <br>แล้วคลิก 'ทำนาย'</p>
                     <div id="wheel-actions" class="flex justify-center gap-3 text-blue-400 mb-3 text-[13px] md:text-[15px] underline underline-offset-4 font-medium">
                         <button onclick="window.shuffleWheelAction()" class="hover:text-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">สับไพ่</button>
@@ -1418,6 +1441,8 @@
         window.shuffleWheelAction = function() {
             const container = document.getElementById('deck-container');
             if(!container) return;
+            if (container.dataset.busy === 'true') return;
+            container.dataset.busy = 'true';
             const cards = container.querySelectorAll('.deck-card-circle');
             
             const actionBtns = document.querySelectorAll('#wheel-actions button');
@@ -1440,12 +1465,15 @@
                 availableDeck = shuffleArray(availableDeck);
                 window.renderWheelSpread(true);
                 actionBtns.forEach(b => b.disabled = false);
+                container.dataset.busy = 'false';
             }, 1050);
         };
 
         window.cutWheelAction = function() {
             const container = document.getElementById('deck-container');
             if(!container) return;
+            if (container.dataset.busy === 'true') return;
+            container.dataset.busy = 'true';
             const cards = container.querySelectorAll('.deck-card-circle');
             
             const actionBtns = document.querySelectorAll('#wheel-actions button');
@@ -1472,6 +1500,7 @@
                 availableDeck = bottomHalf.concat(topHalf);
                 window.renderWheelSpread(true);
                 actionBtns.forEach(b => b.disabled = false);
+                container.dataset.busy = 'false';
             }, 1050);
         };
 
@@ -1521,6 +1550,8 @@
         window.shuffleFanAction = function() {
             const container = document.getElementById('deck-container');
             if(!container) return;
+            if (container.dataset.busy === 'true') return;
+            container.dataset.busy = 'true';
             const cards = container.querySelectorAll('.deck-card-fan');
             
             const actionBtns = document.querySelectorAll('#fan-actions button');
@@ -1543,12 +1574,15 @@
                 availableDeck = shuffleArray(availableDeck);
                 window.renderFanSpread(true); 
                 actionBtns.forEach(b => b.disabled = false);
+                container.dataset.busy = 'false';
             }, 1050);
         };
 
         window.cutFanAction = function() {
             const container = document.getElementById('deck-container');
             if(!container) return;
+            if (container.dataset.busy === 'true') return;
+            container.dataset.busy = 'true';
             const cards = container.querySelectorAll('.deck-card-fan');
             
             const actionBtns = document.querySelectorAll('#fan-actions button');
@@ -1575,6 +1609,7 @@
                 availableDeck = bottomHalf.concat(topHalf);
                 window.renderFanSpread(true);
                 actionBtns.forEach(b => b.disabled = false);
+                container.dataset.busy = 'false';
             }, 1050);
         };
 
@@ -1610,19 +1645,25 @@
         // ==========================================
         window.selectFromDeck = function(element) {
             if(chatState !== 'AWAITING_CARD_SELECTION') return;
+            if (isSelectingCard || element?.dataset.selected === 'true') return;
 
             const isWheel = userData.spreadType.startsWith('wheel');
             const reqCards = userData.spreadType === 'wheel3' ? 3 : 1;
             
             if(selectedCardsData.length >= reqCards) return;
 
+            const deckContainer = element.closest('#deck-container');
+            if (deckContainer?.dataset.busy === 'true') return;
+
             const cardIndex = parseInt(element.getAttribute('data-index'));
             const selectedCard = availableDeck[cardIndex];
             if (!selectedCard) return;
 
+            isSelectingCard = true;
+            element.dataset.selected = 'true';
+
             // ทำให้ไพ่ในกองหายไป
-            element.style.opacity = '0';
-            element.style.pointerEvents = 'none';
+            element.classList.add('is-picked');
             availableDeck[cardIndex] = null; 
             
             selectedCardsData.push(selectedCard);
@@ -1675,6 +1716,7 @@
 
             lucide.createIcons();
             setTimeout(scrollToBottom, 50);
+            isSelectingCard = false;
         };
 
         // 5. ส่งให้ AI ทำนาย
