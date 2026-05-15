@@ -13,6 +13,7 @@
     
     <!-- Leaflet CSS (สำหรับระบบแผนที่) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/mobile-chat.css" />
 
     <style>
         /* ธีมสีเหลือง/ทอง (Amber) สำหรับโหราศาสตร์ไทย */
@@ -138,7 +139,7 @@
         .leaflet-dragging .leaflet-grab { cursor: grabbing; }
     </style>
 </head>
-<body class="bg-[#0a0703] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)]">
+<body class="chat-shell bg-[#0a0703] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)]">
 
     <!-- --- BACKGROUND (ใช้ background.jpg เหมือนหน้าอื่นๆ) --- -->
     <div
@@ -416,7 +417,7 @@
         </div>
 
         <!-- INPUT AREA (ซ่อนไว้ก่อนจนกว่าจะผูกดวงเสร็จ) -->
-        <div id="input-area" class="w-full bg-[#0a0703]/90 backdrop-blur-xl border-t border-[rgb(var(--c-primary)/0.3)] p-4 shrink-0 relative z-20 theme-transition hidden">
+        <div id="input-area" class="chat-input-area w-full bg-[#0a0703]/90 backdrop-blur-xl border-t border-[rgb(var(--c-primary)/0.3)] p-4 shrink-0 relative z-20 theme-transition hidden">
             <div class="max-w-4xl mx-auto relative flex items-center gap-2">
                 <input 
                     type="text"
@@ -490,6 +491,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/mobile-chat-viewport.js"></script>
     <script src="js/app.js"></script>
     <script>
         lucide.createIcons();

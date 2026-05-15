@@ -10,6 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="css/mobile-chat.css" />
     <!-- Markdown Parser -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
@@ -240,7 +241,7 @@
   </head>
 
   <body
-    class="bg-[#050305] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)] theme-single"
+    class="chat-shell bg-[#050305] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)] theme-single"
   >
     <!-- --- BACKGROUND (ใช้ background.jpg เหมือนหน้าอื่นๆ) --- -->
     <div
@@ -563,7 +564,7 @@
 
       <!-- INPUT AREA -->
       <div
-        class="w-full bg-[#050305]/90 backdrop-blur-xl border-t border-[rgb(var(--c-primary)/0.3)] p-4 shrink-0 relative z-20 theme-transition"
+        class="chat-input-area w-full bg-[#050305]/90 backdrop-blur-xl border-t border-[rgb(var(--c-primary)/0.3)] p-4 shrink-0 relative z-20 theme-transition"
       >
         <div class="max-w-4xl mx-auto relative flex items-center gap-2">
           <input
@@ -596,6 +597,7 @@
     <!-- Supabase SDK & App Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/auth.js"></script>
+    <script src="js/mobile-chat-viewport.js"></script>
     <script src="js/app.js"></script>
     <script>
       lucide.createIcons();
@@ -914,7 +916,7 @@
         currentLoveSessionId = session.id;
         chatState = "CHATTING";
 
-        document.body.className = `bg-[#050305] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)] theme-${session.status_key}`;
+        document.body.className = `chat-shell bg-[#050305] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)] theme-${session.status_key}`;
         document.getElementById("status-selection").style.display = "none";
         document.getElementById("love-history-panel")?.remove();
         userInput.disabled = false;
@@ -1002,7 +1004,7 @@
         void statusSelection.offsetWidth; // Force reflow
         statusSelection.classList.add("msg-animate");
 
-        document.body.className = "bg-[#050305] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)] theme-single";
+        document.body.className = "chat-shell bg-[#050305] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)] theme-single";
         userInput.value = "";
         userInput.disabled = true;
         sendBtn.disabled = true;
@@ -1249,7 +1251,7 @@
         loveHistoryCache.clear();
 
         // 🌟 เปลี่ยนสีธีมทั้งหน้าเว็บไซต์
-        document.body.className = `bg-[#050305] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)] theme-${key}`;
+        document.body.className = `chat-shell bg-[#050305] text-slate-200 h-screen flex flex-col overflow-hidden relative selection:bg-[rgb(var(--c-primary)/0.3)] theme-${key}`;
 
         // ซ่อนปุ่มเลือกสถานะ
         document.getElementById("status-selection").style.display = "none";
