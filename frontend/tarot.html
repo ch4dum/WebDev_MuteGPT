@@ -267,8 +267,9 @@
             }
 
             .tarot-wheel-deck {
-                width: min(300px, calc(100vw - 3.5rem)) !important;
-                height: min(300px, calc(100vw - 3.5rem)) !important;
+                width: min(260px, calc(100vw - 7rem), 100%) !important;
+                height: auto !important;
+                aspect-ratio: 1 / 1;
                 margin-left: auto;
                 margin-right: auto;
             }
@@ -278,11 +279,11 @@
                 height: 48px;
                 margin-top: -24px;
                 margin-left: -15px;
-                transform: rotate(var(--target-angle)) translateY(-116px);
+                transform: rotate(var(--target-angle)) translateY(-100px);
             }
 
             .deck-card-circle.is-preview {
-                transform: rotate(var(--target-angle)) translateY(-132px) scale(1.14);
+                transform: rotate(var(--target-angle)) translateY(-114px) scale(1.14);
             }
 
             .fan-wrapper {
