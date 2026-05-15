@@ -1,64 +1,75 @@
 {
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index.js"
+      "src": "frontend/**",
+      "use": "@vercel/static"
     },
     {
-      "source": "/favicon.ico",
-      "destination": "/api/index.js"
+      "src": "api/index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.js"
     },
     {
-      "source": "/assets/(.*)",
-      "destination": "/frontend/assets/$1"
+      "src": "/favicon.ico",
+      "dest": "/api/index.js"
     },
     {
-      "source": "/css/(.*)",
-      "destination": "/frontend/css/$1"
+      "src": "/assets/(.*)",
+      "dest": "/frontend/assets/$1"
     },
     {
-      "source": "/js/(.*)",
-      "destination": "/frontend/js/$1"
+      "src": "/css/(.*)",
+      "dest": "/frontend/css/$1"
     },
     {
-      "source": "/",
-      "destination": "/frontend/index.html"
+      "src": "/js/(.*)",
+      "dest": "/frontend/js/$1"
     },
     {
-      "source": "/index.html",
-      "destination": "/frontend/index.html"
+      "src": "/",
+      "dest": "/frontend/index.html"
     },
     {
-      "source": "/main.html",
-      "destination": "/frontend/main.html"
+      "src": "/index.html",
+      "dest": "/frontend/index.html"
     },
     {
-      "source": "/separator.html",
-      "destination": "/frontend/separator.html"
+      "src": "/main.html",
+      "dest": "/frontend/main.html"
     },
     {
-      "source": "/user_key_data.html",
-      "destination": "/frontend/user_key_data.html"
+      "src": "/separator.html",
+      "dest": "/frontend/separator.html"
     },
     {
-      "source": "/love.html",
-      "destination": "/frontend/love.html"
+      "src": "/user_key_data.html",
+      "dest": "/frontend/user_key_data.html"
     },
     {
-      "source": "/number.html",
-      "destination": "/frontend/number.html"
+      "src": "/love.html",
+      "dest": "/frontend/love.html"
     },
     {
-      "source": "/color.html",
-      "destination": "/frontend/color.html"
+      "src": "/number.html",
+      "dest": "/frontend/number.html"
     },
     {
-      "source": "/hora.html",
-      "destination": "/frontend/hora.html"
+      "src": "/color.html",
+      "dest": "/frontend/color.html"
     },
     {
-      "source": "/tarot.html",
-      "destination": "/frontend/tarot.html"
+      "src": "/hora.html",
+      "dest": "/frontend/hora.html"
+    },
+    {
+      "src": "/tarot.html",
+      "dest": "/frontend/tarot.html"
     }
   ]
 }
