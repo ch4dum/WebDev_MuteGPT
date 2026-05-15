@@ -62,19 +62,38 @@ Open the app through the Node gateway. Do not open the HTML files directly, beca
 
 This repository includes a Vercel wrapper for deploying the static frontend and API proxy. The Python FastAPI service should be deployed separately, for example on Render, Railway, Fly.io, or a VPS.
 
-### 1. Deploy the Python Backend Separately
+### 1. Deploy the Python Backend on Render
 
-Deploy `backend/python/main.py` as a FastAPI service and set the Python service environment variables there:
+Create a Render **Web Service** for the Python FastAPI backend.
+
+Recommended Render settings:
+
+```text
+Language: Python 3
+Branch: codex/vercel-deploy-wrapper, or main after this deploy branch is merged
+Root Directory: backend/python
+Build Command: pip install -r requirements.txt
+Start Command: uvicorn main:app --host 0.0.0.0 --port $PORT
+```
+
+Set the Python service environment variables in Render:
 
 ```env
 GEMINI_API_KEY=your-gemini-api-key
+GOOGLE_CLIENT_ID=your-google-client-id
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
 
-After deployment, keep the public API URL, for example:
+`GEMINI_API_KEY` is required for Gemini responses. The other variables are useful if backend routes need the same auth/config context as the frontend.
+
+After deployment, keep the public Render URL, for example:
 
 ```text
 https://mutegpt-python.onrender.com
 ```
+
+Use a US Render region such as Oregon if Gemini returns `User location is not supported for the API use`.
 
 ### 2. Deploy the Frontend and Proxy to Vercel
 
@@ -93,7 +112,7 @@ SUPABASE_ANON_KEY=your-supabase-anon-key
 PYTHON_API_URL=https://mutegpt-python.onrender.com
 ```
 
-Do not set `PYTHON_API_URL` to `localhost` in production. It must point to the deployed Python backend.
+Do not set `PYTHON_API_URL` to `localhost` in production. It must point to the deployed Render backend.
 
 ## Runtime Flow
 
