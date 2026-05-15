@@ -243,8 +243,66 @@
             pointer-events: none;
         }
 
+        .deck-card-circle.is-preview {
+            transform: rotate(var(--target-angle)) translateY(-148px) scale(1.16);
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+            border-color: #fbbf24;
+            z-index: 260 !important;
+        }
+
+        .deck-card-fan.is-preview {
+            transform: rotate(var(--target-angle)) translateY(-22px) scale(1.12);
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+            border-color: #fbbf24;
+            z-index: 260 !important;
+        }
+
         .tarot-center-controls {
             z-index: 300 !important;
+        }
+
+        @media (max-width: 767px) {
+            .tarot-wheel-shell {
+                overflow-x: clip;
+            }
+
+            .tarot-wheel-deck {
+                width: min(300px, calc(100vw - 3.5rem)) !important;
+                height: min(300px, calc(100vw - 3.5rem)) !important;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .deck-card-circle {
+                width: 30px;
+                height: 48px;
+                margin-top: -24px;
+                margin-left: -15px;
+                transform: rotate(var(--target-angle)) translateY(-116px);
+            }
+
+            .deck-card-circle.is-preview {
+                transform: rotate(var(--target-angle)) translateY(-132px) scale(1.14);
+            }
+
+            .fan-wrapper {
+                width: min(300px, calc(100vw - 3.5rem));
+                height: 155px;
+                margin-left: auto;
+                margin-right: auto;
+                overflow: visible;
+            }
+
+            .deck-card-fan {
+                width: 34px;
+                height: 52px;
+                margin-left: -17px;
+                transform-origin: center 165px;
+            }
+
+            .deck-card-fan.is-preview {
+                transform: rotate(var(--target-angle)) translateY(-18px) scale(1.1);
+            }
         }
     </style>
 </head>
@@ -494,6 +552,7 @@
         let selectedCardsData = [];
         let availableDeck = [];
         let isSelectingCard = false;
+        let previewCardElement = null;
         const tarotHistoryCache = new Map();
         let currentTarotSessionId = null;
         let hasShownTarotSetupWarning = false;
@@ -626,6 +685,7 @@
             selectedCardsData = [];
             availableDeck = [];
             isSelectingCard = false;
+            previewCardElement = null;
             userData = {
                 categoryKey: '',
                 categoryName: '',
@@ -1273,6 +1333,7 @@
                 chatState = 'AWAITING_CARD_SELECTION';
                 selectedCardsData = [];
                 isSelectingCard = false;
+                previewCardElement = null;
 
                 let customUI = '';
 
@@ -1307,7 +1368,7 @@
                     }
 
                     customUI = `
-                        <div class="mt-4 mb-2 p-4 bg-black/40 rounded-2xl border border-purple-500/20 shadow-inner overflow-visible">
+                        <div class="tarot-wheel-shell mt-4 mb-2 p-4 bg-black/40 rounded-2xl border border-purple-500/20 shadow-inner overflow-visible">
                             
                             <div class="flex justify-center gap-3 md:gap-6 mb-8" id="tarot-slots">
                                 ${slotsHtml}
@@ -1316,7 +1377,7 @@
                             <hr class="border-purple-500/30 mb-8">
                             
                             <!-- พื้นที่วงล้อไพ่ 360 องศา -->
-                            <div class="relative w-[320px] h-[320px] md:w-[580px] md:h-[580px] mx-auto flex items-center justify-center my-6 transition-opacity duration-500" id="deck-container">
+                            <div class="tarot-wheel-deck relative w-[320px] h-[320px] md:w-[580px] md:h-[580px] mx-auto flex items-center justify-center my-6 transition-opacity duration-500" id="deck-container">
                                 <!-- วงล้อจะถูกสร้างด้วย JS -->
                             </div>
                         </div>
@@ -1381,12 +1442,14 @@
 
         window.restoreDeckCardLayer = function(element) {
             if (!element) return;
+            if (element.classList.contains('is-preview')) return;
             element.style.zIndex = element.dataset.zIndex || '10';
         };
 
         window.renderWheelSpread = function(animateFromCenter = false) {
             const container = document.getElementById('deck-container');
             if (!container) return;
+            previewCardElement = null;
             
             let html = '';
             let validCards = [];
@@ -1510,6 +1573,7 @@
         window.renderFanSpread = function(animateFromCenter = false) {
             const container = document.getElementById('deck-container');
             if (!container) return;
+            previewCardElement = null;
             
             let html = '';
             let validCards = [];
@@ -1519,7 +1583,7 @@
             }
             
             const total = validCards.length;
-            const maxAngle = window.innerWidth < 768 ? 50 : 55; 
+            const maxAngle = window.innerWidth < 768 ? 38 : 55;
             
             validCards.forEach((originalIndex, idx) => {
                 const angle = -maxAngle + ((maxAngle * 2) / (total - 1 || 1)) * idx;
@@ -1659,10 +1723,29 @@
             const selectedCard = availableDeck[cardIndex];
             if (!selectedCard) return;
 
+            const isTouchSelection = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+            if (isTouchSelection && previewCardElement !== element) {
+                if (previewCardElement) {
+                    previewCardElement.classList.remove('is-preview');
+                    window.restoreDeckCardLayer(previewCardElement);
+                }
+                previewCardElement = element;
+                element.classList.add('is-preview');
+                window.bringDeckCardToFront(element);
+
+                const msgBox = element.closest('.bg-\\[\\#1a0f2e\\]\\/90');
+                const statusId = isWheel ? '#selection-status-inner' : '#selection-status';
+                const statusEl = msgBox?.querySelector(statusId);
+                if (statusEl) statusEl.innerHTML = `แตะไพ่ใบเดิมอีกครั้ง<br>เพื่อเลือกใบนี้`;
+                return;
+            }
+
             isSelectingCard = true;
             element.dataset.selected = 'true';
+            if (previewCardElement === element) previewCardElement = null;
 
             // ทำให้ไพ่ในกองหายไป
+            element.classList.remove('is-preview');
             element.classList.add('is-picked');
             availableDeck[cardIndex] = null; 
             

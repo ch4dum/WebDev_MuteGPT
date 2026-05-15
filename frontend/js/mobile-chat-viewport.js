@@ -1,8 +1,21 @@
 (function () {
+  let lastStableHeight = window.innerHeight;
+
+  function isTextInputFocused() {
+    const active = document.activeElement;
+    if (!active) return false;
+    const tagName = active.tagName;
+    return tagName === "INPUT" || tagName === "TEXTAREA" || active.isContentEditable;
+  }
+
   function setAppHeight() {
-    const viewport = window.visualViewport;
-    const height = viewport && viewport.height ? viewport.height : window.innerHeight;
-    document.documentElement.style.setProperty("--app-height", `${height}px`);
+    if (isTextInputFocused()) {
+      document.documentElement.style.setProperty("--app-height", `${lastStableHeight}px`);
+      return;
+    }
+
+    lastStableHeight = window.innerHeight;
+    document.documentElement.style.setProperty("--app-height", `${lastStableHeight}px`);
   }
 
   setAppHeight();
@@ -11,6 +24,5 @@
 
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", setAppHeight);
-    window.visualViewport.addEventListener("scroll", setAppHeight);
   }
 })();
