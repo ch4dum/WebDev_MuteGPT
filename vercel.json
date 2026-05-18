@@ -52,6 +52,18 @@
       "dest": "/frontend/user_key_data.html"
     },
     {
+      "src": "/privacy.html",
+      "dest": "/frontend/privacy.html"
+    },
+    {
+      "src": "/terms.html",
+      "dest": "/frontend/terms.html"
+    },
+    {
+      "src": "/data-deletion.html",
+      "dest": "/frontend/data-deletion.html"
+    },
+    {
       "src": "/love.html",
       "dest": "/frontend/love.html"
     },
