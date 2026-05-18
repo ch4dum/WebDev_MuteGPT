@@ -17,10 +17,8 @@ function createDonateWidget() {
       <span class="donate-widget-subtitle">ถ้า MuteGPT ช่วยคุณได้ ฝากสนับสนุนการพัฒนาต่อได้นะ</span>
     </div>
     <a class="donate-widget-link" href="https://tipme.in.th/mute-gpt" target="_blank" rel="noopener">
-      <span class="donate-widget-icon">
-        <i data-lucide="heart-handshake"></i>
-      </span>
-      <span class="donate-widget-label">Donate</span>
+      <i data-lucide="heart-handshake"></i>
+      <span>Donate</span>
     </a>
   `;
   document.body.appendChild(widget);
@@ -36,6 +34,100 @@ function injectDonateWidgetStyles() {
   const style = document.createElement('style');
   style.id = 'donate-widget-styles';
   style.textContent = `
+    .donate-widget {
+      position: fixed;
+      left: max(1rem, env(safe-area-inset-left));
+      bottom: max(1rem, env(safe-area-inset-bottom));
+      z-index: 2147483000;
+
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      width: 3.8rem;
+      min-height: 3.4rem;
+      padding: 0.45rem;
+
+      overflow: hidden;
+      border-radius: 999px;
+      border: 1px solid rgba(251, 191, 36, 0.22);
+      background:
+        linear-gradient(135deg, rgba(24, 10, 42, 0.95), rgba(46, 12, 56, 0.92));
+      box-shadow:
+        0 14px 35px rgba(0, 0, 0, 0.28),
+        0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+        0 0 20px rgba(236, 72, 153, 0.10);
+      backdrop-filter: blur(14px);
+      font-family: 'Prompt', sans-serif;
+
+      transition:
+        width 0.28s ease,
+        padding 0.28s ease,
+        border-radius 0.28s ease,
+        transform 0.2s ease,
+        box-shadow 0.25s ease;
+    }
+
+    .donate-widget::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(
+        135deg,
+        rgba(245, 158, 11, 0.10),
+        rgba(236, 72, 153, 0.08)
+      );
+      pointer-events: none;
+    }
+
+    .donate-widget:hover,
+    .donate-widget:focus-within {
+      width: min(390px, calc(100vw - 2rem));
+      padding: 0.75rem;
+      border-radius: 1.1rem;
+      transform: translateY(-2px);
+      box-shadow:
+        0 20px 45px rgba(0, 0, 0, 0.32),
+        0 0 30px rgba(236, 72, 153, 0.16);
+    }
+
+    .donate-widget-text {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.12rem;
+
+      opacity: 0;
+      transform: translateX(-8px);
+      pointer-events: none;
+      white-space: nowrap;
+      transition:
+        opacity 0.2s ease,
+        transform 0.24s ease;
+    }
+
+    .donate-widget:hover .donate-widget-text,
+    .donate-widget:focus-within .donate-widget-text {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+      white-space: normal;
+    }
+
+    .donate-widget-title {
+      color: #fff7ed;
+      font-size: 0.9rem;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .donate-widget-subtitle {
+      color: #cbd5e1;
+      font-size: 0.75rem;
+      line-height: 1.35;
+    }
+
     .donate-widget-link {
       position: relative;
       z-index: 1;
@@ -44,17 +136,17 @@ function injectDonateWidgetStyles() {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.55rem;
+      gap: 0.45rem;
 
-      width: 2.7rem;
-      min-width: 2.7rem;
-      height: 2.7rem;
-      padding: 0 0.42rem;
+      width: 2.55rem;
+      min-width: 2.55rem;
+      height: 2.55rem;
+      padding: 0;
 
       border-radius: 999px;
       background: linear-gradient(135deg, #fb923c, #ec4899);
       color: #fff;
-      font-size: 0.9rem;
+      font-size: 0.82rem;
       font-weight: 800;
       text-decoration: none;
       box-shadow:
@@ -65,6 +157,7 @@ function injectDonateWidgetStyles() {
         width 0.24s ease,
         min-width 0.24s ease,
         padding 0.24s ease,
+        border-radius 0.24s ease,
         transform 0.2s ease,
         filter 0.2s ease;
     }
@@ -72,46 +165,53 @@ function injectDonateWidgetStyles() {
     .donate-widget:hover .donate-widget-link,
     .donate-widget:focus-within .donate-widget-link {
       width: auto;
-      min-width: 10.5rem;
-      padding: 0 0.95rem 0 0.42rem;
+      min-width: 2.7rem;
+      padding: 0 0.9rem;
+      border-radius: 999px;
     }
 
     .donate-widget-link:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.05);
+      transform: scale(1.03);
+      filter: brightness(1.06);
     }
 
-    .donate-widget-icon {
-      flex: 0 0 auto;
-      width: 1.95rem;
-      height: 1.95rem;
-      border-radius: 999px;
-
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-
-      background: rgba(255, 255, 255, 0.12);
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-      line-height: 0;
-    }
-
-    .donate-widget-icon svg {
+    .donate-widget-link svg {
       width: 1rem;
       height: 1rem;
-      display: block;
-      stroke-width: 2.2;
+      flex-shrink: 0;
     }
 
-    .donate-widget-label {
+    .donate-widget-link span {
       display: none;
-      line-height: 1;
-      white-space: nowrap;
     }
 
-    .donate-widget:hover .donate-widget-label,
-    .donate-widget:focus-within .donate-widget-label {
+    .donate-widget:hover .donate-widget-link span,
+    .donate-widget:focus-within .donate-widget-link span {
       display: inline;
+    }
+
+    @media (max-width: 640px) {
+      .donate-widget {
+        width: 3.45rem;
+        min-height: 3.15rem;
+        padding: 0.38rem;
+      }
+
+      .donate-widget:hover,
+      .donate-widget:focus-within {
+        width: min(320px, calc(100vw - 1.5rem));
+        padding: 0.65rem;
+      }
+
+      .donate-widget-subtitle {
+        display: none;
+      }
+
+      .donate-widget-link {
+        width: 2.4rem;
+        min-width: 2.4rem;
+        height: 2.4rem;
+      }
     }
     }
   `;
