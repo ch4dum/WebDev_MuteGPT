@@ -17,8 +17,10 @@ function createDonateWidget() {
       <span class="donate-widget-subtitle">ถ้า MuteGPT ช่วยคุณได้ ฝากสนับสนุนการพัฒนาต่อได้นะ</span>
     </div>
     <a class="donate-widget-link" href="https://tipme.in.th/mute-gpt" target="_blank" rel="noopener">
-      <i data-lucide="heart-handshake"></i>
-      <span>Donate</span>
+      <span class="donate-widget-icon">
+        <i data-lucide="heart-handshake"></i>
+      </span>
+      <span class="donate-widget-label">Donate</span>
     </a>
   `;
   document.body.appendChild(widget);
@@ -34,38 +36,6 @@ function injectDonateWidgetStyles() {
   const style = document.createElement('style');
   style.id = 'donate-widget-styles';
   style.textContent = `
-.donate-widget {
-  position: fixed;
-  left: max(1rem, env(safe-area-inset-left));
-  bottom: max(1rem, env(safe-area-inset-bottom));
-  z-index: 2147483000;
-
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-
-  width: 3.25rem;
-  height: 3.25rem;
-  max-width: min(420px, calc(100vw - 2rem));
-  padding: 0.65rem;
-
-  overflow: hidden;
-  border: 1px solid rgba(251, 191, 36, 0.28);
-  border-radius: 999px;
-  background: rgba(10, 5, 20, 0.86);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28), 0 0 22px rgba(251, 191, 36, 0.12);
-  backdrop-filter: blur(14px);
-  font-family: 'Prompt', sans-serif;
-
-  cursor: pointer;
-  transition:
-    width 0.28s ease,
-    height 0.28s ease,
-    border-radius 0.28s ease,
-    padding 0.28s ease,
-    box-shadow 0.28s ease;
-}
-
     .donate-widget {
       position: fixed;
       left: max(1rem, env(safe-area-inset-left));
