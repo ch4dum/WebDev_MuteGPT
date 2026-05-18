@@ -53,9 +53,22 @@
     return quotaEl;
   }
 
+  function getSupabaseClient() {
+    if (window.supabaseClient?.auth?.getSession) return window.supabaseClient;
+    try {
+      if (typeof supabaseClient !== "undefined" && supabaseClient?.auth?.getSession) {
+        return supabaseClient;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
   async function getAccessToken() {
-    if (!window.supabaseClient?.auth?.getSession) return "";
-    const { data: { session } } = await window.supabaseClient.auth.getSession();
+    const client = getSupabaseClient();
+    if (!client) return "";
+    const { data: { session } } = await client.auth.getSession();
     return session?.access_token || "";
   }
 
@@ -128,7 +141,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     ensureQuotaBadge();
     const timer = window.setInterval(() => {
-      if (window.supabaseClient?.auth?.getSession) {
+      if (getSupabaseClient()) {
         window.clearInterval(timer);
         refreshReadingQuota();
       }
