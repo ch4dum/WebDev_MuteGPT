@@ -27,6 +27,18 @@ app.add_middleware(
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
 
+SAFETY_INSTRUCTION = """
+
+### [Global Safety & Legal Boundaries]
+- คำตอบทั้งหมดเป็นเพื่อความบันเทิง การสะท้อนตนเอง และการให้มุมมองประกอบการตัดสินใจเท่านั้น ไม่ใช่ข้อเท็จจริงหรือคำรับรองอนาคต
+- ห้ามฟันธงหรือรับประกันผลลัพธ์ 100% โดยเฉพาะเรื่องความรัก สุขภาพ การเงิน การลงทุน กฎหมาย งาน หรือการตัดสินใจสำคัญ
+- ห้ามให้คำแนะนำที่แทนผู้เชี่ยวชาญด้านแพทย์ สุขภาพจิต กฎหมาย การเงิน การลงทุน ภาษี หรือความปลอดภัย หากผู้ใช้ถามเรื่องเหล่านี้ ให้ตอบเชิงทั่วไปอย่างระมัดระวังและแนะนำให้ปรึกษาผู้เชี่ยวชาญที่เกี่ยวข้อง
+- หากผู้ใช้พูดถึงการทำร้ายตัวเอง ทำร้ายผู้อื่น ความรุนแรง หรือสถานการณ์ฉุกเฉิน ให้ตอบด้วยความเห็นใจ สนับสนุนให้หยุดการกระทำอันตราย ติดต่อคนใกล้ตัวหรือบริการฉุกเฉิน/ผู้เชี่ยวชาญทันที และห้ามให้รายละเอียดวิธีทำอันตราย
+- ห้ามขอหรือกระตุ้นให้ผู้ใช้ส่งข้อมูลอ่อนไหวที่ไม่จำเป็น เช่น เลขบัตรประชาชน รหัสผ่าน ข้อมูลบัญชีธนาคาร ข้อมูลสุขภาพละเอียด หรือข้อมูลส่วนตัวของบุคคลอื่น
+- หากผู้ใช้ถามถึงบุคคลอื่นจากข้อมูลที่ให้มา ให้ตอบเป็นแนวโน้มเชิงความสัมพันธ์/การสื่อสาร ไม่กล่าวอ้างข้อเท็จจริงภายในใจ พฤติกรรมลับ หรือข้อมูลส่วนตัวของบุคคลนั้นแบบฟันธง
+- หากคำถามอาจนำไปสู่การละเมิดความเป็นส่วนตัว การคุกคาม การสะกดรอย หรือการกระทำผิดกฎหมาย ให้ปฏิเสธอย่างสุภาพและเสนอทางเลือกที่ปลอดภัยกว่า
+"""
+
 class ChatRequest(BaseModel):
     name: str = "ลูกดวง"
     full_name: Optional[str] = None
@@ -773,7 +785,7 @@ async def get_horoscope(req: ChatRequest):
         )
         
         prompt = f"ลูกดวงถามว่า: {req.question}"
-        response = model.generate_content(system_instruction + "\n" + prompt)
+        response = model.generate_content(system_instruction + SAFETY_INSTRUCTION + "\n" + prompt)
         
         return {
             "zodiac": zodiac,
@@ -825,7 +837,7 @@ async def get_numerology(req: NumerologyRequest):
 ช่วยวิเคราะห์เลขนี้ให้ตรงกับหมวด {req.category_label} โดยเริ่มตอบได้เลย ไม่ต้องอธิบายขั้นตอนระบบ
 """
 
-        response = model.generate_content(system_instruction + "\n" + user_prompt)
+        response = model.generate_content(system_instruction + SAFETY_INSTRUCTION + "\n" + user_prompt)
 
         return {
             "root_number": root_data["root"],
@@ -887,7 +899,7 @@ async def get_lucky_color(req: ColorRequest):
 - ห้ามเริ่มด้วยคำทักทาย
 """
 
-        response = model.generate_content(system_instruction + "\n" + user_prompt)
+        response = model.generate_content(system_instruction + SAFETY_INSTRUCTION + "\n" + user_prompt)
 
         return {
             "prediction": response.text,
@@ -964,7 +976,7 @@ async def get_thai_astrology(req: ThaiAstrologyRequest):
 - ตอบให้ตรงคำถามและนำไปใช้ได้จริง
 """
 
-        response = model.generate_content(system_instruction + "\n" + user_prompt)
+        response = model.generate_content(system_instruction + SAFETY_INSTRUCTION + "\n" + user_prompt)
 
         return {
             "zodiac": zodiac,
@@ -1019,7 +1031,7 @@ async def get_tarot_reading(req: TarotRequest):
 ช่วยอ่านไพ่ให้ตรงกับหมวด {req.category_label} และรูปแบบ {req.subcategory_label or req.spread_type}
 """
 
-        response = model.generate_content(system_instruction + "\n" + user_prompt)
+        response = model.generate_content(system_instruction + SAFETY_INSTRUCTION + "\n" + user_prompt)
 
         return {
             "prediction": response.text,

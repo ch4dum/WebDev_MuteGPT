@@ -1,5 +1,37 @@
 // Initialize Lucide icons
-lucide.createIcons();
+if (window.lucide) {
+  lucide.createIcons();
+}
+
+function createDonateWidget() {
+  if (document.getElementById('donate-widget')) return;
+
+  const widget = document.createElement('aside');
+  widget.id = 'donate-widget';
+  widget.className = 'donate-widget';
+  widget.setAttribute('aria-label', 'สนับสนุน MuteGPT');
+  widget.innerHTML = `
+    <div class="donate-widget-text">
+      <span class="donate-widget-title">ชอบ MuteGPT ใช่ไหม?</span>
+      <span class="donate-widget-subtitle">ถ้า MuteGPT ช่วยคุณได้ ฝากสนับสนุนการพัฒนาต่อได้นะ</span>
+    </div>
+    <a class="donate-widget-link" href="https://tipme.in.th/mute-gpt" target="_blank" rel="noopener">
+      <i data-lucide="heart-handshake"></i>
+      <span>Donate</span>
+    </a>
+  `;
+  document.body.appendChild(widget);
+
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', createDonateWidget);
+} else {
+  createDonateWidget();
+}
 
 // --- Navbar scroll effect ---
 const navbar = document.getElementById('navbar');
