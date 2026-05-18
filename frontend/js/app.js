@@ -66,25 +66,77 @@ function injectDonateWidgetStyles() {
     box-shadow 0.28s ease;
 }
 
+    .donate-widget {
+      position: fixed;
+      left: max(1rem, env(safe-area-inset-left));
+      bottom: max(1rem, env(safe-area-inset-bottom));
+      z-index: 2147483000;
+
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      width: 3.8rem;
+      min-height: 3.4rem;
+      padding: 0.45rem;
+
+      overflow: hidden;
+      border-radius: 999px;
+      border: 1px solid rgba(251, 191, 36, 0.22);
+      background:
+        linear-gradient(135deg, rgba(24, 10, 42, 0.95), rgba(46, 12, 56, 0.92));
+      box-shadow:
+        0 14px 35px rgba(0, 0, 0, 0.28),
+        0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+        0 0 20px rgba(236, 72, 153, 0.10);
+      backdrop-filter: blur(14px);
+      font-family: 'Prompt', sans-serif;
+
+      transition:
+        width 0.28s ease,
+        padding 0.28s ease,
+        border-radius 0.28s ease,
+        transform 0.2s ease,
+        box-shadow 0.25s ease;
+    }
+
+    .donate-widget::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(
+        135deg,
+        rgba(245, 158, 11, 0.10),
+        rgba(236, 72, 153, 0.08)
+      );
+      pointer-events: none;
+    }
+
     .donate-widget:hover,
     .donate-widget:focus-within {
-      width: min(420px, calc(100vw - 2rem));
-      height: auto;
-      padding: 0.8rem;
-      border-radius: 1rem;
+      width: min(390px, calc(100vw - 2rem));
+      padding: 0.75rem;
+      border-radius: 1.1rem;
+      transform: translateY(-2px);
+      box-shadow:
+        0 20px 45px rgba(0, 0, 0, 0.32),
+        0 0 30px rgba(236, 72, 153, 0.16);
     }
 
     .donate-widget-text {
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 0.1rem;
+      gap: 0.12rem;
 
       opacity: 0;
-      transform: translateX(-0.35rem);
+      transform: translateX(-8px);
       pointer-events: none;
       white-space: nowrap;
-      transition: opacity 0.2s ease, transform 0.2s ease;
+      transition:
+        opacity 0.2s ease,
+        transform 0.24s ease;
     }
 
     .donate-widget:hover .donate-widget-text,
@@ -97,7 +149,7 @@ function injectDonateWidgetStyles() {
 
     .donate-widget-title {
       color: #fff7ed;
-      font-size: 0.88rem;
+      font-size: 0.9rem;
       font-weight: 700;
       line-height: 1.25;
     }
@@ -109,27 +161,35 @@ function injectDonateWidgetStyles() {
     }
 
     .donate-widget-link {
+      position: relative;
+      z-index: 1;
       flex: 0 0 auto;
+
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.4rem;
+      gap: 0.45rem;
 
-      width: 2rem;
-      min-width: 2rem;
-      height: 2rem;
+      width: 2.55rem;
+      min-width: 2.55rem;
+      height: 2.55rem;
       padding: 0;
 
       border-radius: 999px;
-      background: linear-gradient(135deg, #f59e0b, #ec4899);
+      background: linear-gradient(135deg, #fb923c, #ec4899);
       color: #fff;
       font-size: 0.82rem;
       font-weight: 800;
       text-decoration: none;
-      box-shadow: 0 8px 22px rgba(236, 72, 153, 0.26);
+      box-shadow:
+        0 10px 22px rgba(236, 72, 153, 0.24),
+        0 0 0 1px rgba(255, 255, 255, 0.10) inset;
+
       transition:
-        width 0.25s ease,
-        padding 0.25s ease,
+        width 0.24s ease,
+        min-width 0.24s ease,
+        padding 0.24s ease,
+        border-radius 0.24s ease,
         transform 0.2s ease,
         filter 0.2s ease;
     }
@@ -137,18 +197,20 @@ function injectDonateWidgetStyles() {
     .donate-widget:hover .donate-widget-link,
     .donate-widget:focus-within .donate-widget-link {
       width: auto;
-      min-width: 2.35rem;
-      padding: 0 0.85rem;
+      min-width: 2.7rem;
+      padding: 0 0.9rem;
+      border-radius: 999px;
     }
 
     .donate-widget-link:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.08);
+      transform: scale(1.03);
+      filter: brightness(1.06);
     }
 
     .donate-widget-link svg {
       width: 1rem;
       height: 1rem;
+      flex-shrink: 0;
     }
 
     .donate-widget-link span {
@@ -158,6 +220,30 @@ function injectDonateWidgetStyles() {
     .donate-widget:hover .donate-widget-link span,
     .donate-widget:focus-within .donate-widget-link span {
       display: inline;
+    }
+
+    @media (max-width: 640px) {
+      .donate-widget {
+        width: 3.45rem;
+        min-height: 3.15rem;
+        padding: 0.38rem;
+      }
+
+      .donate-widget:hover,
+      .donate-widget:focus-within {
+        width: min(320px, calc(100vw - 1.5rem));
+        padding: 0.65rem;
+      }
+
+      .donate-widget-subtitle {
+        display: none;
+      }
+
+      .donate-widget-link {
+        width: 2.4rem;
+        min-width: 2.4rem;
+        height: 2.4rem;
+      }
     }
     }
   `;
