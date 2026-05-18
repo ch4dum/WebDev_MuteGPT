@@ -782,6 +782,26 @@ section {
   margin-top: 0.25rem;
 }
 
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem 1rem;
+  margin-top: 1rem;
+}
+
+.footer-links a,
+.policy-consent a {
+  color: #fde68a;
+  text-decoration: none;
+}
+
+.footer-links a:hover,
+.policy-consent a:hover,
+.policy-back:hover {
+  color: #c084fc;
+}
+
 .footer-credits {
   color: var(--text-muted);
   font-size: 0.85rem;
@@ -808,6 +828,10 @@ section {
     align-items: flex-start;
   }
 
+  .footer-links {
+    justify-content: flex-start;
+  }
+
   .footer-credits {
     text-align: right;
   }
@@ -826,6 +850,14 @@ section {
 }
 
 /* ===== MODAL ===== */
+.policy-consent {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  margin: 1rem 0 0;
+  text-align: center;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -867,6 +899,71 @@ section {
 
 .modal-overlay.active .modal-box {
   transform: scale(1) translateY(0);
+}
+
+/* ===== POLICY PAGES ===== */
+.policy-page {
+  background:
+    radial-gradient(circle at top left, rgba(147, 51, 234, 0.22), transparent 32rem),
+    radial-gradient(circle at bottom right, rgba(245, 158, 11, 0.16), transparent 28rem),
+    var(--bg-deep);
+}
+
+.policy-shell {
+  width: min(920px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 3rem 0;
+}
+
+.policy-back {
+  display: inline-flex;
+  align-items: center;
+  color: #fde68a;
+  text-decoration: none;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.policy-card {
+  background: rgba(10, 5, 20, 0.86);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1.25rem;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+
+.policy-eyebrow {
+  color: #fbbf24;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.policy-card h1 {
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  line-height: 1.15;
+  margin: 0.5rem 0;
+  background: linear-gradient(to right, #fde68a, #facc15, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.policy-updated {
+  color: var(--text-dim);
+  margin-bottom: 2rem;
+}
+
+.policy-card h2 {
+  color: #fff;
+  font-size: 1.15rem;
+  margin: 1.75rem 0 0.5rem;
+}
+
+.policy-card p {
+  color: #cbd5e1;
+  line-height: 1.85;
 }
 
 .modal-glow-1,
