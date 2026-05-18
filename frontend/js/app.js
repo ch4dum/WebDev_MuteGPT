@@ -191,32 +191,33 @@ function injectDonateWidgetStyles() {
     }
 
     @media (max-width: 640px) {
-    .donate-widget {
-      left: auto;
-      right: max(0.75rem, env(safe-area-inset-right));
-      bottom: max(5.5rem, env(safe-area-inset-bottom));
+      .donate-widget {
+        left: auto;
+        bottom: auto;
+        right: max(0.75rem, env(safe-area-inset-right));
+        top: max(4.5rem, env(safe-area-inset-top));
 
-      width: 3.45rem;
-      min-height: 3.15rem;
-      padding: 0.38rem;
-    }
+        width: 3.45rem;
+        min-height: 3.15rem;
+        padding: 0.38rem;
+      }
 
-    .donate-widget:hover,
-    .donate-widget:focus-within {
-      width: min(320px, calc(100vw - 1.5rem));
-      padding: 0.65rem;
-    }
+      .donate-widget:hover,
+      .donate-widget:focus-within {
+        width: min(320px, calc(100vw - 1.5rem));
+        padding: 0.65rem;
+      }
 
-    .donate-widget-subtitle {
-      display: none;
-    }
+      .donate-widget-subtitle {
+        display: none;
+      }
 
-    .donate-widget-link {
-      width: 2.4rem;
-      min-width: 2.4rem;
-      height: 2.4rem;
+      .donate-widget-link {
+        width: 2.4rem;
+        min-width: 2.4rem;
+        height: 2.4rem;
+      }
     }
-  }
   `;
   document.head.appendChild(style);
 }
