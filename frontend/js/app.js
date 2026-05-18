@@ -34,22 +34,44 @@ function injectDonateWidgetStyles() {
   const style = document.createElement('style');
   style.id = 'donate-widget-styles';
   style.textContent = `
-    .donate-widget {
-      position: fixed;
-      left: max(1rem, env(safe-area-inset-left));
-      bottom: max(1rem, env(safe-area-inset-bottom));
-      z-index: 2147483000;
-      display: flex;
-      align-items: center;
-      gap: 0.85rem;
-      max-width: min(420px, calc(100vw - 2rem));
+.donate-widget {
+  position: fixed;
+  left: max(1rem, env(safe-area-inset-left));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 2147483000;
+
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+
+  width: 3.25rem;
+  height: 3.25rem;
+  max-width: min(420px, calc(100vw - 2rem));
+  padding: 0.65rem;
+
+  overflow: hidden;
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  border-radius: 999px;
+  background: rgba(10, 5, 20, 0.86);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28), 0 0 22px rgba(251, 191, 36, 0.12);
+  backdrop-filter: blur(14px);
+  font-family: 'Prompt', sans-serif;
+
+  cursor: pointer;
+  transition:
+    width 0.28s ease,
+    height 0.28s ease,
+    border-radius 0.28s ease,
+    padding 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+    .donate-widget:hover,
+    .donate-widget:focus-within {
+      width: min(420px, calc(100vw - 2rem));
+      height: auto;
       padding: 0.8rem;
-      border: 1px solid rgba(251, 191, 36, 0.28);
       border-radius: 1rem;
-      background: rgba(10, 5, 20, 0.86);
-      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28), 0 0 22px rgba(251, 191, 36, 0.12);
-      backdrop-filter: blur(14px);
-      font-family: 'Prompt', sans-serif;
     }
 
     .donate-widget-text {
@@ -57,6 +79,20 @@ function injectDonateWidgetStyles() {
       display: flex;
       flex-direction: column;
       gap: 0.1rem;
+
+      opacity: 0;
+      transform: translateX(-0.35rem);
+      pointer-events: none;
+      white-space: nowrap;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .donate-widget:hover .donate-widget-text,
+    .donate-widget:focus-within .donate-widget-text {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+      white-space: normal;
     }
 
     .donate-widget-title {
@@ -78,8 +114,12 @@ function injectDonateWidgetStyles() {
       align-items: center;
       justify-content: center;
       gap: 0.4rem;
-      min-height: 2.35rem;
-      padding: 0 0.85rem;
+
+      width: 2rem;
+      min-width: 2rem;
+      height: 2rem;
+      padding: 0;
+
       border-radius: 999px;
       background: linear-gradient(135deg, #f59e0b, #ec4899);
       color: #fff;
@@ -87,7 +127,18 @@ function injectDonateWidgetStyles() {
       font-weight: 800;
       text-decoration: none;
       box-shadow: 0 8px 22px rgba(236, 72, 153, 0.26);
-      transition: transform 0.2s ease, filter 0.2s ease;
+      transition:
+        width 0.25s ease,
+        padding 0.25s ease,
+        transform 0.2s ease,
+        filter 0.2s ease;
+    }
+
+    .donate-widget:hover .donate-widget-link,
+    .donate-widget:focus-within .donate-widget-link {
+      width: auto;
+      min-width: 2.35rem;
+      padding: 0 0.85rem;
     }
 
     .donate-widget-link:hover {
@@ -100,20 +151,14 @@ function injectDonateWidgetStyles() {
       height: 1rem;
     }
 
-    @media (max-width: 640px) {
-      .donate-widget {
-        right: max(1rem, env(safe-area-inset-right));
-        padding: 0.65rem;
-      }
+    .donate-widget-link span {
+      display: none;
+    }
 
-      .donate-widget-subtitle {
-        display: none;
-      }
-
-      .donate-widget-link {
-        min-height: 2.2rem;
-        padding: 0 0.75rem;
-      }
+    .donate-widget:hover .donate-widget-link span,
+    .donate-widget:focus-within .donate-widget-link span {
+      display: inline;
+    }
     }
   `;
   document.head.appendChild(style);
