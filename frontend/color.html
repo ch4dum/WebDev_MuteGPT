@@ -772,8 +772,23 @@
                 ? await res.json()
                 : { detail: await res.text() };
 
-            if (!res.ok) throw new Error(data.detail || `API error ${res.status}`);
+            if (!res.ok) {
+                const error = new Error(data.detail || `API error ${res.status}`);
+                error.status = res.status;
+                throw error;
+            }
             return data;
+        }
+
+        function getReadingErrorMessage(err, fallback) {
+            const message = err?.message || "";
+            if (err?.status === 401 || message.includes("sign in") || message.includes("login session")) {
+                return "กรุณาเข้าสู่ระบบก่อนเริ่มดูดวงนะครับ/ค่ะ";
+            }
+            if (err?.status === 429) {
+                return message;
+            }
+            return fallback;
         }
 
         function getColorOverviewQuestion(key) {
@@ -978,7 +993,7 @@
                 sendBtn.disabled = false;
                 userInput.placeholder = "พิมพ์สิ่งที่อยากถามเพิ่มเติมได้เลย...";
                 userInput.focus();
-                appendAIMessage("ขออภัยครับ/ค่ะ ระบบสีมงคลกำลังมีปัญหา กรุณาลองใหม่อีกครั้ง 🌸");
+                appendAIMessage(getReadingErrorMessage(err, "ขออภัยครับ/ค่ะ ระบบสีมงคลกำลังมีปัญหา กรุณาลองใหม่อีกครั้ง 🌸"));
                 console.error(err);
             }
         }
@@ -1063,7 +1078,7 @@
                     userInput.disabled = false;
                     userInput.placeholder = "ถามต่อได้เลย...";
                     userInput.focus();
-                    appendAIMessage("ขออภัยครับ/ค่ะ ระบบกำลังมีปัญหา กรุณาลองใหม่อีกครั้ง 🌸");
+                    appendAIMessage(getReadingErrorMessage(err, "ขออภัยครับ/ค่ะ ระบบกำลังมีปัญหา กรุณาลองใหม่อีกครั้ง 🌸"));
                     console.error(err);
                 }
             }

@@ -966,8 +966,21 @@
                 ? await res.json()
                 : { detail: await res.text() };
 
-            if (!res.ok) throw new Error(data.detail || `API error ${res.status}`);
+            if (!res.ok) {
+                const error = new Error(data.detail || `API error ${res.status}`);
+                error.status = res.status;
+                throw error;
+            }
             return data;
+        }
+
+        function getReadingErrorMessage(err, fallback) {
+            const message = err?.message || '';
+            if (err?.status === 401 || message.includes('sign in') || message.includes('login session')) {
+                return 'กรุณาเข้าสู่ระบบก่อนเริ่มดูดวงนะคะ';
+            }
+            if (err?.status === 429) return message;
+            return fallback;
         }
 
         function buildCardsSummaryHTML(cards) {
@@ -1308,7 +1321,7 @@
                     userInput.disabled = false;
                     sendBtn.disabled = false;
                     userInput.focus();
-                    appendAIMessage('ขออภัยค่ะ ระบบอ่านไพ่กำลังมีปัญหา กรุณาลองใหม่อีกครั้ง');
+                    appendAIMessage(getReadingErrorMessage(err, 'ขออภัยค่ะ ระบบอ่านไพ่กำลังมีปัญหา กรุณาลองใหม่อีกครั้ง'));
                     console.error(err);
                 }
             }
@@ -1847,7 +1860,7 @@
                 sendBtn.disabled = false;
                 userInput.placeholder = "ลองถามใหม่อีกครั้งได้เลยค่ะ...";
                 userInput.focus();
-                appendAIMessage("ขออภัยค่ะ ระบบอ่านไพ่กำลังมีปัญหา กรุณาลองใหม่อีกครั้ง");
+                appendAIMessage(getReadingErrorMessage(err, "ขออภัยค่ะ ระบบอ่านไพ่กำลังมีปัญหา กรุณาลองใหม่อีกครั้ง"));
                 console.error(err);
             }
         }

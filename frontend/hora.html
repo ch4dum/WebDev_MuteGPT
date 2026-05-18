@@ -1027,6 +1027,15 @@
             return { res, data };
         }
 
+        function getReadingErrorMessage(err, fallback) {
+            const message = err?.message || '';
+            if (err?.status === 401 || message.includes('sign in') || message.includes('login session')) {
+                return 'กรุณาเข้าสู่ระบบก่อนเริ่มดูดวงนะครับ';
+            }
+            if (err?.status === 429) return message;
+            return fallback;
+        }
+
         async function getUserContext() {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -1384,7 +1393,11 @@
                     )),
                 });
 
-                if (!res.ok) throw new Error(data.detail || `API error ${res.status}`);
+                if (!res.ok) {
+                    const error = new Error(data.detail || `API error ${res.status}`);
+                    error.status = res.status;
+                    throw error;
+                }
 
                 showTyping(false);
                 const reply = data.prediction || data.result || data.message;
@@ -1407,7 +1420,7 @@
                 userInput.placeholder = 'สอบถามดวงชะตาเพิ่มเติมจากลัคนาของคุณ...';
                 userInput.focus();
                 chatState = 'CHATTING';
-                appendAIMessage('ขออภัยครับ ระบบผูกดวงกำลังมีปัญหา ลองถามหรือส่งข้อมูลอีกครั้งได้เลยครับ');
+                appendAIMessage(getReadingErrorMessage(err, 'ขออภัยครับ ระบบผูกดวงกำลังมีปัญหา ลองถามหรือส่งข้อมูลอีกครั้งได้เลยครับ'));
                 console.error(err);
             }
         }
@@ -1440,7 +1453,11 @@
                     body: JSON.stringify(buildHoraPayload(text, 'THAI_ASTROLOGY')),
                 });
 
-                if (!res.ok) throw new Error(data.detail || `API error ${res.status}`);
+                if (!res.ok) {
+                    const error = new Error(data.detail || `API error ${res.status}`);
+                    error.status = res.status;
+                    throw error;
+                }
 
                 showTyping(false);
                 userInput.disabled = false;
@@ -1458,7 +1475,7 @@
                 userInput.disabled = false;
                 sendBtn.disabled = false;
                 userInput.focus();
-                appendAIMessage('ขออภัยครับ ระบบกำลังมีปัญหา กรุณาลองใหม่อีกครั้งครับ');
+                appendAIMessage(getReadingErrorMessage(err, 'ขออภัยครับ ระบบกำลังมีปัญหา กรุณาลองใหม่อีกครั้งครับ'));
                 console.error(err);
             }
         }

@@ -966,6 +966,15 @@ section {
   line-height: 1.85;
 }
 
+.policy-card a {
+  color: #fde68a;
+  text-decoration: none;
+}
+
+.policy-card a:hover {
+  color: #c084fc;
+}
+
 .modal-glow-1,
 .modal-glow-2 {
   position: absolute;

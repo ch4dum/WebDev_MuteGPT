@@ -1049,6 +1049,15 @@
         return error?.name === "AbortError" || error?.name === "TimeoutError";
       }
 
+      function getReadingErrorMessage(err, fallback) {
+        const message = err?.message || "";
+        if (err?.status === 401 || message.includes("sign in") || message.includes("login session")) {
+          return "กรุณาเข้าสู่ระบบก่อนเริ่มดูดวงนะคะ";
+        }
+        if (err?.status === 429) return message;
+        return fallback;
+      }
+
       // ─────────────────────────────────────────────────────────────
       // ฟังก์ชันแสดง UI กรอกวันเกิดแฟน/คนคุย
       // ─────────────────────────────────────────────────────────────
@@ -1234,7 +1243,9 @@
           });
 
           if (!res.ok) {
-            throw new Error(data.detail || `Horoscope API returned ${res.status}`);
+            const error = new Error(data.detail || `Horoscope API returned ${res.status}`);
+            error.status = res.status;
+            throw error;
           }
 
           if (flowToken !== loveFlowToken) return;
@@ -1261,10 +1272,13 @@
           userInput.placeholder =
             "พิมพ์เรื่องที่อยากรู้ (เช่น เขาคิดยังไง, เมื่อไหร่จะมีแฟน)...";
           userInput.focus();
-          appendAIMessage(
-            isAbortError(err)
-              ? "คำทำนายรอนานเกินไปนิดหนึ่งค่ะ ลองเลือกสถานะหรือพิมพ์ถามใหม่อีกครั้งนะคะ"
-              : "แม่หมอเชื่อมต่อพลังงานไม่ได้ตอนนี้ แต่พิมพ์คำถามที่อยู่ในใจมาได้เลยนะคะ",
+            appendAIMessage(
+            getReadingErrorMessage(
+              err,
+              isAbortError(err)
+                ? "คำทำนายรอนานเกินไปนิดหนึ่งค่ะ ลองเลือกสถานะหรือพิมพ์ถามใหม่อีกครั้งนะคะ"
+                : "แม่หมอเชื่อมต่อพลังงานไม่ได้ตอนนี้ แต่พิมพ์คำถามที่อยู่ในใจมาได้เลยนะคะ",
+            ),
           );
           if (isAbortError(err)) {
             console.warn("Love overview request was aborted or timed out.");
@@ -1373,7 +1387,9 @@
             });
 
             if (!res.ok) {
-              throw new Error(data.detail || `Horoscope API returned ${res.status}`);
+              const error = new Error(data.detail || `Horoscope API returned ${res.status}`);
+              error.status = res.status;
+              throw error;
             }
 
             if (flowToken !== loveFlowToken) return;
@@ -1392,9 +1408,12 @@
             showTyping(false);
             userInput.disabled = false;
             appendAIMessage(
-              isAbortError(err)
-                ? "คำตอบรอนานเกินไปนิดหนึ่งค่ะ ลองส่งคำถามอีกครั้งนะคะ"
-                : "แม่หมอเชื่อมต่อพลังงานไม่ได้ตอนนี้ ลองใหม่อีกครั้งนะคะ ✨",
+              getReadingErrorMessage(
+                err,
+                isAbortError(err)
+                  ? "คำตอบรอนานเกินไปนิดหนึ่งค่ะ ลองส่งคำถามอีกครั้งนะคะ"
+                  : "แม่หมอเชื่อมต่อพลังงานไม่ได้ตอนนี้ ลองใหม่อีกครั้งนะคะ ✨",
+              ),
             );
             if (isAbortError(err)) {
               console.warn("Love chat request was aborted or timed out.");
