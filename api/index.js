@@ -154,6 +154,54 @@ async function enforceReadingLimit(req, pathname) {
   return { ok: true };
 }
 
+async function getReadingUsageStatus(req) {
+  if (DAILY_READING_LIMIT <= 0) {
+    return { ok: true, status: 200, payload: { limit: 0, used: 0, remaining: null, reset_timezone: "Asia/Bangkok" } };
+  }
+
+  const accessToken = getBearerToken(req);
+  if (!accessToken) {
+    return {
+      ok: false,
+      status: 401,
+      payload: { status: "error", detail: "Please sign in to view your reading quota." },
+    };
+  }
+
+  const user = await getSupabaseUser(accessToken);
+  if (!user?.id) {
+    return {
+      ok: false,
+      status: 401,
+      payload: { status: "error", detail: "Your login session is invalid or expired. Please sign in again." },
+    };
+  }
+
+  try {
+    const used = await countUsageEvents(accessToken, user.id);
+    return {
+      ok: true,
+      status: 200,
+      payload: {
+        limit: DAILY_READING_LIMIT,
+        used,
+        remaining: Math.max(DAILY_READING_LIMIT - used, 0),
+        reset_timezone: "Asia/Bangkok",
+      },
+    };
+  } catch (error) {
+    console.error("Reading usage status error:", error);
+    return {
+      ok: false,
+      status: 500,
+      payload: {
+        status: "error",
+        detail: "Reading quota is not configured. Please run supabase/reading_usage_schema.sql in Supabase.",
+      },
+    };
+  }
+}
+
 function proxyPost(pathname) {
   return async (req, res) => {
     if (!PYTHON_API_URL) return missingPythonApiUrl(res);
@@ -191,6 +239,11 @@ app.get("/api/config", (req, res) => {
     supabaseUrl: process.env.SUPABASE_URL || "",
     supabaseKey: process.env.SUPABASE_ANON_KEY || "",
   });
+});
+
+app.get("/api/v1/reading-usage", async (req, res) => {
+  const result = await getReadingUsageStatus(req);
+  res.status(result.status).json(result.payload);
 });
 
 app.get("/favicon.ico", (req, res) => {
