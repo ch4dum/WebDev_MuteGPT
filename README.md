@@ -71,7 +71,7 @@ Open the app through the Node gateway. Do not open the HTML files directly, beca
 - Frontend: HTML5, CSS3, Tailwind CDN, Vanilla JavaScript
 - Gateway: Node.js, Express
 - AI Backend: Python, FastAPI
-- AI Model: Gemini 2.5 Flash
+- AI Model: Gemini 3.0 Flash Lite
 - Auth/Database: Supabase
 - Astrology Library: Flatlib
 - Markdown Rendering: Marked.js
