@@ -2,6 +2,14 @@
 
 MuteGPT is a personalized horoscope web application that combines Gemini AI with Thai and international astrology concepts. The project is organized as a static frontend, a Node.js gateway, and a Python FastAPI astrology/AI service.
 
+## System Diagrams
+
+### Architecture Diagram
+<img width="251" height="373" alt="Image" src="https://github.com/user-attachments/assets/c435f27f-449b-4fef-bf67-abbd999641ca" />
+
+### Runtime Flowchart
+<img width="627" height="97" alt="Image" src="https://github.com/user-attachments/assets/c44e721d-fbd3-4802-aed4-d5cecb68baa1" />
+
 ## Project Structure
 
 ```text
